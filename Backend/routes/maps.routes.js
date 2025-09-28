@@ -19,7 +19,7 @@ router.get('/get-distance-time',
 
 router.get('/get-suggestions',
     query('input').isString().isLength({ min: 3 }),
-    authMiddleware.authUser,
+    // suggestions are useful before login; make this endpoint public
     mapController.getAutoCompleteSuggestions
 )
 

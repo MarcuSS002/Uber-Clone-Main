@@ -1,37 +1,36 @@
 const axios = require('axios');
 const captainModel = require('../models/captain.model');
 
-module.exports.getAddressCoordinate = async (address) => {
-    const apiKey = process.env.GOOGLE_MAPS_API;
-    if (!apiKey) throw new Error('Google Maps API key not configured (GOOGLE_MAPS_API)');
+// Nominatim for Geocoding and Autocomplete (OpenStreetMap)
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+// OpenRouteService (ORS) for Distance/Time (requires API key)
+const ORS_API_KEY = process.env.ORS_API_KEY;
+const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car';
+
+// NOTE: Add ORS_API_KEY to your Backend/.env if you want distance/time via ORS.
+
+module.exports.getAddressCoordinate = async (address) => {
+    // Use Nominatim search endpoint (be mindful of usage policy / rate limits)
+    const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(address)}&format=json&limit=5`;
 
     try {
-        const response = await axios.get(url);
-        // helpful debug info when things fail
-        if (!response || !response.data) {
-            console.error('No response data from Geocode API', response && response.status);
-            throw new Error('No response from Google Geocode API');
-        }
+        const response = await axios.get(url, { headers: { 'User-Agent': 'UberClone/1.0' } });
 
-        if (response.data.status === 'OK' && response.data.results && response.data.results.length > 0) {
-            const location = response.data.results[0].geometry.location;
-            // return normalized keys and keep legacy 'ltd' property for backward compatibility
+        if (response.data && response.data.length > 0) {
+            const location = response.data[0];
             return {
-                lat: location.lat,
-                ltd: location.lat,
-                lng: location.lng
+                lat: parseFloat(location.lat),
+                ltd: parseFloat(location.lat), // legacy key
+                lng: parseFloat(location.lon)
             };
         } else {
-            // include Google error_message if present
-            const errMsg = response.data.error_message || `Google Geocode status: ${response.data.status}`;
-            console.error('Geocode API error:', errMsg, 'response:', response.data);
-            throw new Error(`Unable to fetch coordinates: ${errMsg}`);
+            throw new Error('Coordinates not found via Nominatim');
         }
     } catch (error) {
-        console.error('Error while fetching address coordinate:', error.message || error, error.response && error.response.data ? error.response.data : 'no response body');
-        throw error;
+        // IMPROVED ERROR HANDLING: Catch the Nominatim API error and throw a clear message.
+        console.error('Error in getAddressCoordinate (Nominatim):', error.message || error);
+        throw new Error('Failed to geocode address.');
     }
 }
 
@@ -40,28 +39,51 @@ module.exports.getDistanceTime = async (origin, destination) => {
         throw new Error('Origin and destination are required');
     }
 
-    const apiKey = process.env.GOOGLE_MAPS_API;
+    if (!ORS_API_KEY) {
+        throw new Error('OpenRouteService API key not configured (ORS_API_KEY)');
+    }
 
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&key=${apiKey}`;
+    // Geocode both addresses to coordinates
+    const originCoords = await module.exports.getAddressCoordinate(origin);
+    const destinationCoords = await module.exports.getAddressCoordinate(destination);
 
+    // ORS requires coordinates in [lon, lat]
+    const coords = [
+        [originCoords.lng, originCoords.lat],
+        [destinationCoords.lng, destinationCoords.lat]
+    ];
+
+    // ORS Directions API supports POST with JSON body
     try {
-
-
-        const response = await axios.get(url);
-        if (response.data.status === 'OK') {
-
-            if (response.data.rows[ 0 ].elements[ 0 ].status === 'ZERO_RESULTS') {
-                throw new Error('No routes found');
+        const response = await axios.post(ORS_DIRECTIONS_URL, {
+            coordinates: coords
+        }, {
+            headers: {
+                // Using Bearer Token scheme for Authorization (Fix for 403)
+                'Authorization': `Bearer ${ORS_API_KEY}`,
+                'Content-Type': 'application/json'
             }
+        });
 
-            return response.data.rows[ 0 ].elements[ 0 ];
+        if (response.data && response.data.routes && response.data.routes.length > 0) {
+            const segment = response.data.routes[0].segments[0];
+            return {
+                distance: {
+                    text: `${(segment.distance / 1000).toFixed(1)} km`,
+                    value: segment.distance
+                },
+                duration: {
+                    text: `${Math.round(segment.duration / 60)} mins`,
+                    value: segment.duration
+                }
+            };
         } else {
-            throw new Error('Unable to fetch distance and time');
+            throw new Error('No routes found via ORS');
         }
-
     } catch (err) {
-        console.error(err);
-        throw err;
+        // CRITICAL IMPROVED ERROR HANDLING: Catch the ORS API error and throw a clear message.
+        console.error('Error in getDistanceTime (ORS API):', err.response?.status, err.response?.data || err.message);
+        throw new Error('Failed to calculate distance/time. Please check ORS key and server logs.');
     }
 }
 
@@ -70,27 +92,25 @@ module.exports.getAutoCompleteSuggestions = async (input) => {
         throw new Error('query is required');
     }
 
-    const apiKey = process.env.GOOGLE_MAPS_API;
-    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${apiKey}`;
+    const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(input)}&format=json&limit=5`;
 
     try {
-        const response = await axios.get(url);
-        if (response.data.status === 'OK') {
-            return response.data.predictions.map(prediction => prediction.description).filter(value => value);
+        const response = await axios.get(url, { headers: { 'User-Agent': 'UberClone/1.0' } });
+
+        if (response.data) {
+            return response.data.map(prediction => prediction.display_name).filter(value => value);
         } else {
             throw new Error('Unable to fetch suggestions');
         }
     } catch (err) {
-        console.error(err);
-        throw err;
+        // IMPROVED ERROR HANDLING: Catch the Nominatim API error and throw a clear message.
+        console.error('Error in getAutoCompleteSuggestions (Nominatim):', err.message || err);
+        throw new Error('Failed to fetch auto-suggestions.');
     }
 }
 
 module.exports.getCaptainsInTheRadius = async (ltd, lng, radius) => {
-
     // radius in km
-
-
     const captains = await captainModel.find({
         location: {
             $geoWithin: {
@@ -100,6 +120,4 @@ module.exports.getCaptainsInTheRadius = async (ltd, lng, radius) => {
     });
 
     return captains;
-
-
 }
