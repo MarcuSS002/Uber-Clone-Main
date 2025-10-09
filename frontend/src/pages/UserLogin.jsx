@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import { useState, useContext } from 'react'
 import { Link } from 'react-router-dom'
 import { UserDataContext } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
@@ -7,9 +7,9 @@ import axios from 'axios'
 const UserLogin = () => {
   const [ email, setEmail ] = useState('')
   const [ password, setPassword ] = useState('')
-  const [ userData, setUserData ] = useState({})
+  const [ error, setError ] = useState(null)
 
-  const { user, setUser } = useContext(UserDataContext)
+  const { setUser } = useContext(UserDataContext)
   const navigate = useNavigate()
 
 
@@ -17,23 +17,27 @@ const UserLogin = () => {
   const submitHandler = async (e) => {
     e.preventDefault();
 
-    const userData = {
-      email: email,
-      password: password
+    setError(null)
+    const payload = { email, password }
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, payload)
+
+      if (response.status === 200) {
+        const data = response.data
+        setUser(data.user)
+        localStorage.setItem('token', data.token)
+        navigate('/home')
+      } else {
+        setError('Login failed. Please check credentials.')
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      setError(err.response?.data?.message || 'Network or server error')
+    } finally {
+      setEmail('')
+      setPassword('')
     }
-
-    const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, userData)
-
-    if (response.status === 200) {
-      const data = response.data
-      setUser(data.user)
-      localStorage.setItem('token', data.token)
-      navigate('/home')
-    }
-
-
-    setEmail('')
-    setPassword('')
   }
 
   return (
@@ -44,7 +48,7 @@ const UserLogin = () => {
         <form onSubmit={(e) => {
           submitHandler(e)
         }}>
-          <h3 className='text-lg font-medium mb-2'>What's your email</h3>
+          <h3 className='text-lg font-medium mb-2'>What&apos;s your email</h3>
           <input
             required
             value={email}
@@ -72,8 +76,9 @@ const UserLogin = () => {
             className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
           >Login</button>
 
-        </form>
-        <p className='text-center'>New here? <Link to='/signup' className='text-blue-600'>Create new Account</Link></p>
+  </form>
+  {error && <p className='text-red-500 mt-2'>{error}</p>}
+  <p className='text-center'>New here? <Link to='/signup' className='text-blue-600'>Create new Account</Link></p>
       </div>
       <div>
         <Link

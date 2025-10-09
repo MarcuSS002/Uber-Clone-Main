@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState, useContext } from 'react'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -8,32 +8,38 @@ const Captainlogin = () => {
 
   const [ email, setEmail ] = useState('')
   const [ password, setPassword ] = useState('')
+  const [ error, setError ] = useState(null)
 
-  const { captain, setCaptain } = React.useContext(CaptainDataContext)
+  const { setCaptain } = useContext(CaptainDataContext)
   const navigate = useNavigate()
 
 
 
   const submitHandler = async (e) => {
     e.preventDefault();
-    const captain = {
-      email: email,
-      password
+    setError(null)
+    const payload = { email, password }
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/login`, payload)
+
+      if (response.status === 200) {
+        const data = response.data
+        setCaptain(data.captain)
+        localStorage.setItem('token', data.token)
+        navigate('/captain-home')
+      } else {
+        setError('Login failed. Please check your credentials.')
+      }
+    } catch (err) {
+      // Surface a friendly message for 401s and other errors
+      console.error('Captain login error:', err)
+      const msg = err.response?.data?.message || (err.response?.status === 401 ? 'Invalid email or password' : 'Network or server error')
+      setError(msg)
+    } finally {
+      setEmail('')
+      setPassword('')
     }
-
-    const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/login`, captain)
-
-    if (response.status === 200) {
-      const data = response.data
-
-      setCaptain(data.captain)
-      localStorage.setItem('token', data.token)
-      navigate('/captain-home')
-
-    }
-
-    setEmail('')
-    setPassword('')
   }
   return (
     <div className='p-7 h-screen flex flex-col justify-between'>
@@ -43,7 +49,7 @@ const Captainlogin = () => {
         <form onSubmit={(e) => {
           submitHandler(e)
         }}>
-          <h3 className='text-lg font-medium mb-2'>What's your email</h3>
+          <h3 className='text-lg font-medium mb-2'>What&apos;s your email</h3>
           <input
             required
             value={email}
@@ -72,7 +78,8 @@ const Captainlogin = () => {
           >Login</button>
 
         </form>
-        <p className='text-center'>Join a fleet? <Link to='/captain-signup' className='text-blue-600'>Register as a Captain</Link></p>
+  {error && <p className='text-red-500 mt-2'>{error}</p>}
+  <p className='text-center'>Join a fleet? <Link to='/captain-signup' className='text-blue-600'>Register as a Captain</Link></p>
       </div>
       <div>
         <Link

@@ -279,7 +279,7 @@ GET `/maps/get-coordinates?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA`
 
 ```json
 {
-  "ltd": 37.4224764,
+  "lat": 37.4224764,
   "lng": -122.0842499
 }
 ```

@@ -22,9 +22,7 @@ const Home = () => {
     const confirmRidePanelRef = useRef(null)
     const vehicleFoundRef = useRef(null)
     const waitingForDriverRef = useRef(null)
-    // NOTE: panelRef is not used in the GSAP hooks for open/close animation, 
-    // as the animation is now controlled by the dynamic classes/state transition.
-    const panelRef = useRef(null) 
+    // NOTE: panelRef was removed — animation is controlled by classes/state.
     const panelCloseRef = useRef(null)
     const [ vehiclePanel, setVehiclePanel ] = useState(false)
     const [ confirmRidePanel, setConfirmRidePanel ] = useState(false)
@@ -47,19 +45,29 @@ const Home = () => {
         if (socket && user) socket.emit("join", { userType: "user", userId: user._id })
     }, [ socket, user ])
 
-    socket.on('ride-confirmed', ride => {
+    useEffect(() => {
+        if (!socket) return;
 
+        const handleRideConfirmed = (ride) => {
+            setVehicleFound(false)
+            setWaitingForDriver(true)
+            setRide(ride)
+        }
 
-        setVehicleFound(false)
-        setWaitingForDriver(true)
-        setRide(ride)
-    })
+        const handleRideStarted = (ride) => {
+            console.log('ride')
+            setWaitingForDriver(false)
+            navigate('/riding', { state: { ride } }) // Updated navigate to include ride data
+        }
 
-    socket.on('ride-started', ride => {
-        console.log("ride")
-        setWaitingForDriver(false)
-        navigate('/riding', { state: { ride } }) // Updated navigate to include ride data
-    })
+        socket.on('ride-confirmed', handleRideConfirmed)
+        socket.on('ride-started', handleRideStarted)
+
+        return () => {
+            socket.off('ride-confirmed', handleRideConfirmed)
+            socket.off('ride-started', handleRideStarted)
+        }
+    }, [socket, navigate])
 
 
     const handlePickupChange = async (e) => {
@@ -76,9 +84,18 @@ const Home = () => {
 
         // Always use backend suggestions service
         try {
+            const token = localStorage.getItem('token')
+            console.log('Token sent for pickup suggestions:', token)
+            if (!token) {
+                console.warn('No auth token found when requesting pickup suggestions')
+                // Optionally redirect to login
+                navigate('/login')
+                return
+            }
+
             const resp = await axios.get(`${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`, {
                 params: { input: val },
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: { Authorization: `Bearer ${token}` }
             })
             setPickupSuggestions(resp.data)
             setPanelOpen(true)
@@ -102,9 +119,17 @@ const Home = () => {
 
         // Always use backend suggestions service
         try {
+            const token = localStorage.getItem('token')
+            console.log('Token sent for destination suggestions:', token)
+            if (!token) {
+                console.warn('No auth token found when requesting destination suggestions')
+                navigate('/login')
+                return
+            }
+
             const resp = await axios.get(`${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`, {
                 params: { input: val },
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: { Authorization: `Bearer ${token}` }
             })
             setDestinationSuggestions(resp.data)
             setPanelOpen(true)
@@ -187,10 +212,18 @@ const Home = () => {
         // This sets the panelOpen state to false, triggering the GSAP close and class change.
         setPanelOpen(false) 
         try { 
+            const token = localStorage.getItem('token')
+            console.log('Token sent for get-fare:', token)
+            if (!token) {
+                console.warn('No auth token found when requesting fare')
+                navigate('/login')
+                return
+            }
+
             const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/get-fare`, {
                 params: { pickup, destination },
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                    Authorization: `Bearer ${token}`
                 }
             })
 
@@ -205,17 +238,50 @@ const Home = () => {
         }
     }
 
+   // ... existing code ...
+
     async function createRide() {
-        await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/create`, {
-            pickup,
-            destination,
-            vehicleType
-        }, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
+        try {
+            const token = localStorage.getItem('token')
+            console.log('Token sent for createRide:', token)
+            if (!token) {
+                console.warn('No auth token found when creating ride')
+                alert('You must be logged in to create a ride')
+                navigate('/login')
+                return
             }
-        })
+
+            await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/create`, {
+                pickup,
+                destination,
+                vehicleType
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            // No need to do anything here on success, as the server should emit a 
+            // socket event that your useEffect listener handles.
+
+        } catch (err) {
+            console.error("Error creating ride:", err);
+            
+            // Handle the error state in the UI
+            // 1. Alert the user
+            alert("Failed to create ride. Please try again.");
+
+            // 2. Optionally, reset state to an earlier step 
+            // (e.g., close LookingForDriver and show ConfirmRide/VehiclePanel)
+            setVehicleFound(false);
+            setConfirmRidePanel(true); // Go back to the confirm ride panel
+
+            // NOTE: If the server is sending an actual 500 error, 
+            // the root fix must still be on the server-side! 
+            // This client-side change prevents the user interface from being stuck.
+        }
     }
+
+
 
     return (
         <div className='flex flex-col h-screen w-screen relative overflow-hidden'> 

@@ -15,21 +15,31 @@ module.exports.getAddressCoordinate = async (address) => {
     const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(address)}&format=json&limit=5`;
 
     try {
-        const response = await axios.get(url, { headers: { 'User-Agent': 'UberClone/1.0' } });
+        const response = await axios.get(url, { headers: { 'User-Agent': 'UberClone/1.0' }, timeout: 4000 });
 
         if (response.data && response.data.length > 0) {
             const location = response.data[0];
             return {
-                lat: parseFloat(location.lat),
-                ltd: parseFloat(location.lat), // legacy key
+                
+                lat: parseFloat(location.lat), // legacy key
                 lng: parseFloat(location.lon)
             };
-        } else {
-            throw new Error('Coordinates not found via Nominatim');
         }
+
+        // If Nominatim returned no results, try Photon as a fallback
+        console.warn('Nominatim returned no results, trying Photon fallback');
+        const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=5`;
+        const photonResp = await axios.get(photonUrl, { timeout: 4000 });
+        if (photonResp.data && photonResp.data.features && photonResp.data.features.length > 0) {
+            const feat = photonResp.data.features[0];
+            const [ lon, lat ] = feat.geometry.coordinates;
+            return { lat: parseFloat(lat), lng: parseFloat(lon) };
+        }
+
+        throw new Error('Coordinates not found via Nominatim or Photon');
     } catch (error) {
         // IMPROVED ERROR HANDLING: Catch the Nominatim API error and throw a clear message.
-        console.error('Error in getAddressCoordinate (Nominatim):', error.message || error);
+        console.error('Error in getAddressCoordinate (geocoding):', error.code || error.message || error);
         throw new Error('Failed to geocode address.');
     }
 }
@@ -95,26 +105,39 @@ module.exports.getAutoCompleteSuggestions = async (input) => {
     const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(input)}&format=json&limit=5`;
 
     try {
-        const response = await axios.get(url, { headers: { 'User-Agent': 'UberClone/1.0' } });
+        const response = await axios.get(url, { headers: { 'User-Agent': 'UberClone/1.0' }, timeout: 4000 });
 
-        if (response.data) {
+        if (response.data && response.data.length > 0) {
             return response.data.map(prediction => prediction.display_name).filter(value => value);
-        } else {
-            throw new Error('Unable to fetch suggestions');
         }
+
+        // Fallback to Photon (Komoot) when Nominatim fails or returns no data
+        console.warn('Nominatim returned no suggestions, trying Photon fallback');
+        const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(input)}&limit=5`;
+        const photonResp = await axios.get(photonUrl, { timeout: 4000 });
+        if (photonResp.data && photonResp.data.features) {
+            return photonResp.data.features.map(f => {
+                const props = f.properties || {};
+                const parts = [ props.name, props.city, props.state, props.country ].filter(Boolean);
+                return parts.join(', ');
+            }).filter(Boolean);
+        }
+
+        throw new Error('Unable to fetch suggestions from Nominatim or Photon');
     } catch (err) {
         // IMPROVED ERROR HANDLING: Catch the Nominatim API error and throw a clear message.
-        console.error('Error in getAutoCompleteSuggestions (Nominatim):', err.message || err);
+        console.error('Error in getAutoCompleteSuggestions (geocoding):', err.code || err.message || err);
         throw new Error('Failed to fetch auto-suggestions.');
     }
 }
 
-module.exports.getCaptainsInTheRadius = async (ltd, lng, radius) => {
+module.exports.getCaptainsInTheRadius = async (lat, lng, radius) => {
     // radius in km
     const captains = await captainModel.find({
         location: {
             $geoWithin: {
-                $centerSphere: [ [ ltd, lng ], radius / 6371 ]
+                // Mongo expects coordinates as [ <lng>, <lat> ] in GeoJSON order inside queries
+                $centerSphere: [ [ lng, lat ], radius / 6371 ]
             }
         }
     });

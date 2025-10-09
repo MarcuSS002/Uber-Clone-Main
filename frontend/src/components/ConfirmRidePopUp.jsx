@@ -1,32 +1,49 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import PropTypes from 'prop-types'
 
 const ConfirmRidePopUp = (props) => {
     const [ otp, setOtp ] = useState('')
     const navigate = useNavigate()
 
+    const [ isStarting, setIsStarting ] = useState(false)
+
     const submitHander = async (e) => {
         e.preventDefault()
+        if (isStarting) return
+        setIsStarting(true)
 
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/start-ride`, {
-            params: {
-                rideId: props.ride._id,
-                otp: otp
-            },
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-        })
-
-        if (response.status === 200) {
-            props.setConfirmRidePopupPanel(false)
-            props.setRidePopupPanel(false)
-            navigate('/captain-riding', { state: { ride: props.ride } })
+        const token = localStorage.getItem('token')
+        if (!token) {
+            alert('You must be logged in to start a ride')
+            setIsStarting(false)
+            return
         }
 
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/start-ride`, {
+                params: {
+                    rideId: props.ride._id,
+                    otp: otp
+                },
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
 
+            if (response.status === 200) {
+                props.setConfirmRidePopupPanel(false)
+                props.setRidePopupPanel(false)
+                // Navigate the captain to their riding page
+                navigate('/captain-riding', { state: { ride: response.data } })
+            }
+        } catch (err) {
+            console.error('Error starting ride:', err)
+            alert(err.response?.data?.message || 'Failed to start ride. Check OTP and try again.')
+        } finally {
+            setIsStarting(false)
+        }
     }
     return (
         <div>
@@ -46,14 +63,21 @@ const ConfirmRidePopUp = (props) => {
                     <div className='flex items-center gap-5 p-3 border-b-2'>
                         <i className="ri-map-pin-user-fill"></i>
                         <div>
-                            <h3 className='text-lg font-medium'>562/11-A</h3>
+                            <h3 className='text-lg font-medium'>{props.ride?.pickup}</h3>
                             <p className='text-sm -mt-1 text-gray-600'>{props.ride?.pickup}</p>
                         </div>
                     </div>
                     <div className='flex items-center gap-5 p-3 border-b-2'>
                         <i className="text-lg ri-map-pin-2-fill"></i>
                         <div>
-                            <h3 className='text-lg font-medium'>562/11-A</h3>
+                            <h3 className='text-lg font-medium'>{props.ride?.pickup}</h3>
+                            <p className='text-sm -mt-1 text-gray-600'>{props.ride?.pickup}</p>
+                        </div>
+                    </div>
+                    <div className='flex items-center gap-5 p-3 border-b-2'>
+                        <i className="text-lg ri-map-pin-2-fill"></i>
+                        <div>
+                            <h3 className='text-lg font-medium'>{props.ride?.destination}</h3>
                             <p className='text-sm -mt-1 text-gray-600'>{props.ride?.destination}</p>
                         </div>
                     </div>
@@ -85,3 +109,9 @@ const ConfirmRidePopUp = (props) => {
 }
 
 export default ConfirmRidePopUp
+
+ConfirmRidePopUp.propTypes = {
+    ride: PropTypes.object.isRequired,
+    setConfirmRidePopupPanel: PropTypes.func.isRequired,
+    setRidePopupPanel: PropTypes.func.isRequired
+}

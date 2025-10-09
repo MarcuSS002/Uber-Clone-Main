@@ -1,4 +1,4 @@
-import React from 'react'
+// React import not required with modern JSX tooling
 import { Link, useLocation } from 'react-router-dom' // Added useLocation
 import { useEffect, useContext } from 'react'
 import { SocketContext } from '../context/SocketContext'
@@ -11,9 +11,12 @@ const Riding = () => {
     const { socket } = useContext(SocketContext)
     const navigate = useNavigate()
 
-    socket.on("ride-ended", () => {
-        navigate('/home')
-    })
+    useEffect(() => {
+        if (!socket) return;
+        const handleRideEnded = () => navigate('/home');
+        socket.on('ride-ended', handleRideEnded);
+        return () => socket.off('ride-ended', handleRideEnded);
+    }, [socket, navigate]);
 
 
     return (

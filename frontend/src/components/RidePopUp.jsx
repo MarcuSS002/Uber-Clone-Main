@@ -1,4 +1,5 @@
-import React from 'react'
+// React import not required when only using JSX with modern toolchains
+import PropTypes from 'prop-types'
 
 const RidePopUp = (props) => {
     return (
@@ -40,10 +41,12 @@ const RidePopUp = (props) => {
                 </div>
                 <div className='mt-5 w-full '>
                     <button onClick={() => {
-                        props.setConfirmRidePopupPanel(true)
+                        // Parent handles opening the confirm panel after successful confirm
                         props.confirmRide()
 
-                    }} className=' bg-green-600 w-full text-white font-semibold p-2 px-10 rounded-lg'>Accept</button>
+                    }} disabled={props.isConfirming} className={` bg-green-600 w-full text-white font-semibold p-2 px-10 rounded-lg ${props.isConfirming ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {props.isConfirming ? 'Accepting...' : 'Accept'}
+                    </button>
 
                     <button onClick={() => {
                         props.setRidePopupPanel(false)
@@ -58,3 +61,11 @@ const RidePopUp = (props) => {
 }
 
 export default RidePopUp
+
+RidePopUp.propTypes = {
+    ride: PropTypes.object,
+    setRidePopupPanel: PropTypes.func.isRequired,
+    setConfirmRidePopupPanel: PropTypes.func,
+    confirmRide: PropTypes.func.isRequired,
+    isConfirming: PropTypes.bool
+}
