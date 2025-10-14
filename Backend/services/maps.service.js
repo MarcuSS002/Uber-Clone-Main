@@ -142,5 +142,14 @@ module.exports.getCaptainsInTheRadius = async (lat, lng, radius) => {
         }
     });
 
+    // If no captains are found in the radius (common in dev/testing),
+    // fall back to returning all captains that currently have a socketId
+    // so real-time notification flows can be tested reliably.
+    if (!Array.isArray(captains) || captains.length === 0) {
+        console.warn(`No captains found within ${radius}km. Falling back to all online captains for testing.`);
+        const allOnline = await captainModel.find({ socketId: { $exists: true, $ne: '' } });
+        return allOnline;
+    }
+
     return captains;
 }

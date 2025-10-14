@@ -1,4 +1,6 @@
-import { createContext, useState, useContext } from 'react';
+/* eslint-disable react/prop-types */
+import { createContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 export const CaptainDataContext = createContext();
 
@@ -20,6 +22,37 @@ const CaptainContext = ({ children }) => {
         setError,
         updateCaptain
     };
+
+    // On mount, try to restore captain from saved token (login or signup)
+    useEffect(() => {
+        const tryLoadCaptain = async () => {
+            const token = localStorage.getItem('captain-token') || localStorage.getItem('token');
+            if (!token) return;
+
+            setIsLoading(true);
+            try {
+                const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/captains/profile`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res?.data?.captain) {
+                    setCaptain(res.data.captain);
+                }
+            } catch (err) {
+                console.error('Failed to restore captain from token:', err?.response?.data || err.message || err);
+                setError('Failed to restore session');
+                // If token is invalid/expired, remove it
+                // keep this conservative: only remove if server responded 401
+                if (err?.response?.status === 401) {
+                    localStorage.removeItem('captain-token');
+                    localStorage.removeItem('token');
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        tryLoadCaptain();
+    }, []);
 
     return (
         <CaptainDataContext.Provider value={value}>

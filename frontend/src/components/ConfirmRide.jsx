@@ -1,4 +1,4 @@
-import React from 'react'
+import PropTypes from 'prop-types';
 
 const ConfirmRide = (props) => {
     return (
@@ -43,5 +43,15 @@ const ConfirmRide = (props) => {
         </div>
     )
 }
+
+ConfirmRide.propTypes = {
+    setConfirmRidePanel: PropTypes.func.isRequired,
+    pickup: PropTypes.string.isRequired,
+    destination: PropTypes.string.isRequired,
+    fare: PropTypes.object.isRequired,
+    vehicleType: PropTypes.string.isRequired,
+    setVehicleFound: PropTypes.func.isRequired,
+    createRide: PropTypes.func.isRequired,
+};
 
 export default ConfirmRide

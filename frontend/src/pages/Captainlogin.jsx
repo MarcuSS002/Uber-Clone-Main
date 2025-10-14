@@ -25,8 +25,9 @@ const Captainlogin = () => {
 
       if (response.status === 200) {
         const data = response.data
-        setCaptain(data.captain)
-        localStorage.setItem('token', data.token)
+  setCaptain(data.captain)
+  // Store captain token separately to avoid overwriting user token
+  localStorage.setItem('captain-token', data.token)
         navigate('/captain-home')
       } else {
         setError('Login failed. Please check your credentials.')

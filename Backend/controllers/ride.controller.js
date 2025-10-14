@@ -27,14 +27,15 @@ module.exports.createRide = async (req, res) => {
         // Notification work should not crash the request-response flow. Wrap it separately.
         try {
             const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
-
+            console.log(`pickupCoordinates:`, pickupCoordinates);
             // Defensive check: ensure coordinates are valid before using them
             if (!pickupCoordinates || typeof pickupCoordinates.lat !== 'number' || typeof pickupCoordinates.lng !== 'number') {
                 console.warn(`Could not get valid coordinates for pickup: ${pickup}. Skipping captain notification.`);
                 return;
             }
-
+            
             const captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.lat, pickupCoordinates.lng, 2);
+            console.log(captainsInRadius);
 
             // Make OTP blank for notifications
             ride.otp = "";

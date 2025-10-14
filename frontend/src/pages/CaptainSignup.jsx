@@ -19,7 +19,7 @@ const CaptainSignup = () => {
   const [ vehicleType, setVehicleType ] = useState('')
 
 
-  const { captain, setCaptain } = React.useContext(CaptainDataContext)
+  const { setCaptain } = React.useContext(CaptainDataContext)
 
 
   const submitHandler = async (e) => {
@@ -44,7 +44,8 @@ const CaptainSignup = () => {
     if (response.status === 201) {
       const data = response.data
       setCaptain(data.captain)
-      localStorage.setItem('token', data.token)
+      // store captain token under its own key so it doesn't conflict with user token
+      localStorage.setItem('captain-token', data.token)
       navigate('/captain-home')
     }
 
@@ -67,7 +68,7 @@ const CaptainSignup = () => {
           submitHandler(e)
         }}>
 
-          <h3 className='text-lg w-full  font-medium mb-2'>What's our Captain's name</h3>
+          <h3 className='text-lg w-full  font-medium mb-2'>What&apos;s our Captain&apos;s name</h3>
           <div className='flex gap-4 mb-7'>
             <input
               required
@@ -91,7 +92,7 @@ const CaptainSignup = () => {
             />
           </div>
 
-          <h3 className='text-lg font-medium mb-2'>What's our Captain's email</h3>
+          <h3 className='text-lg font-medium mb-2'>What&apos;s our Captain&apos;s email</h3>
           <input
             required
             value={email}

@@ -16,7 +16,6 @@ const CaptainHome = () => {
     const [ confirmRidePopupPanel, setConfirmRidePopupPanel ] = useState(false)
 
     const ridePopupPanelRef = useRef(null)
-    const confirmRidePopupPanelRef = useRef(null)
     const [ ride, setRide ] = useState(null)
     const [ isConfirming, setIsConfirming ] = useState(false)
 
@@ -24,7 +23,7 @@ const CaptainHome = () => {
     const { captain } = useContext(CaptainDataContext)
 
     useEffect(() => {
-        if (!socket || !captain) return;
+        if (!socket || !captain || !captain._id) return;
 
         socket.emit('join', {
             userId: captain._id,
@@ -32,18 +31,19 @@ const CaptainHome = () => {
         })
 
         const updateLocation = () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
+            // CORRECTION: For development/testing we send a hardcoded location
+            // near the user's logged pickup point so captains are considered "nearby".
+            const hardcodedLocation = {
+                lat: 28.630000,
+                lng: 77.210000
+            };
 
-                    socket.emit('update-location-captain', {
-                        userId: captain._id,
-                        location: {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        }
-                    })
-                })
-            }
+            console.log(`Hardcoded location emitted for captain ${captain._id}:`, hardcodedLocation.lat, hardcodedLocation.lng);
+
+            socket.emit('update-location-captain', {
+                userId: captain._id,
+                location: hardcodedLocation
+            });
         }
 
         updateLocation()
@@ -57,8 +57,11 @@ const CaptainHome = () => {
         if (!socket) return;
 
         const handleNewRide = (data) => {
+            console.debug('Socket event: new-ride', data)
             setRide(data)
+            // Show the ride popup panel on new-ride arrival so captain can review and Accept
             setRidePopupPanel(true)
+            setConfirmRidePopupPanel(false)
         }
 
         socket.on('new-ride', handleNewRide)
@@ -72,7 +75,7 @@ const CaptainHome = () => {
         if (!ride) return;
         setIsConfirming(true)
         try {
-            const token = localStorage.getItem('token')
+            const token = localStorage.getItem('captain-token')
             if (!token) {
                 alert('You must be logged in as a captain to accept rides')
                 return
@@ -86,10 +89,9 @@ const CaptainHome = () => {
                 }
             })
 
+            // Open confirm ride popup so captain can enter OTP to start the ride
             setRidePopupPanel(false)
             setConfirmRidePopupPanel(true)
-            // Clear the pending ride locally
-            setRide(null)
         } catch (err) {
             console.error('Error confirming ride:', err)
             alert('Failed to accept ride. Please try again.')
@@ -100,28 +102,19 @@ const CaptainHome = () => {
 
 
     useGSAP(function () {
+        const target = ridePopupPanelRef.current;
+        if (!target) return;
+
         if (ridePopupPanel) {
-            gsap.to(ridePopupPanelRef.current, {
+            gsap.to(target, {
                 transform: 'translateY(0)'
             })
         } else {
-            gsap.to(ridePopupPanelRef.current, {
+            gsap.to(target, {
                 transform: 'translateY(100%)'
             })
         }
     }, [ ridePopupPanel ])
-
-    useGSAP(function () {
-        if (confirmRidePopupPanel) {
-            gsap.to(confirmRidePopupPanelRef.current, {
-                transform: 'translateY(0)'
-            })
-        } else {
-            gsap.to(confirmRidePopupPanelRef.current, {
-                transform: 'translateY(100%)'
-            })
-        }
-    }, [ confirmRidePopupPanel ])
 
     return (
         <div className='h-screen'>
@@ -147,11 +140,12 @@ const CaptainHome = () => {
                     isConfirming={isConfirming}
                 />
             </div>
-            <div ref={confirmRidePopupPanelRef} className='fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
+            {ride && confirmRidePopupPanel && (
                 <ConfirmRidePopUp
                     ride={ride}
-                    setConfirmRidePopupPanel={setConfirmRidePopupPanel} setRidePopupPanel={setRidePopupPanel} />
-            </div>
+                    setConfirmRidePopupPanel={setConfirmRidePopupPanel}
+                    setRidePopupPanel={setRidePopupPanel} />
+            )}
         </div>
     )
 }

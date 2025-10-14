@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import gsap from 'gsap'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import PropTypes from 'prop-types'
@@ -14,9 +15,9 @@ const ConfirmRidePopUp = (props) => {
         if (isStarting) return
         setIsStarting(true)
 
-        const token = localStorage.getItem('token')
+        const token = localStorage.getItem('captain-token')
         if (!token) {
-            alert('You must be logged in to start a ride')
+            alert('You must be logged in as a captain to start a ride')
             setIsStarting(false)
             return
         }
@@ -45,8 +46,25 @@ const ConfirmRidePopUp = (props) => {
             setIsStarting(false)
         }
     }
+    const rootRef = useRef(null)
+
+    useEffect(() => {
+        const el = rootRef.current
+        if (!el) return
+        // animate in
+        gsap.fromTo(el, { yPercent: 100 }, { yPercent: 0, duration: 0.4, ease: 'power2.out' })
+        return () => {
+            // animate out (optional)
+            try {
+                gsap.to(el, { yPercent: 100, duration: 0.3, ease: 'power2.in' })
+            } catch {
+                // ignore if unmounted
+            }
+        }
+    }, [])
+
     return (
-        <div>
+        <div ref={rootRef} className='fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
             <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => {
                 props.setRidePopupPanel(false)
             }}><i className="text-3xl text-gray-200 ri-arrow-down-wide-line"></i></h5>

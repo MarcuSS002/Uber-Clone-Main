@@ -1,4 +1,5 @@
-import React, { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { CaptainDataContext } from '../context/CapatainContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -7,7 +8,6 @@ const CaptainProtectWrapper = ({
     children
 }) => {
 
-    const token = localStorage.getItem('token')
     const navigate = useNavigate()
     const { captain, setCaptain } = useContext(CaptainDataContext)
     const [ isLoading, setIsLoading ] = useState(true)
@@ -16,13 +16,20 @@ const CaptainProtectWrapper = ({
 
 
     useEffect(() => {
-        if (!token) {
+        // Prefer captain-token, but fall back to generic token if present (helps when tokens were stored under 'token')
+        const rawToken = localStorage.getItem('captain-token') || localStorage.getItem('token')
+
+        if (!rawToken) {
             navigate('/captain-login')
+            return
         }
+
+        const mask = (t) => t ? `${t.slice(0,6)}...${t.slice(-6)}` : null
+        console.log('CaptainProtectWrapper: using token', mask(rawToken))
 
         axios.get(`${import.meta.env.VITE_BASE_URL}/captains/profile`, {
             headers: {
-                Authorization: `Bearer ${token}`
+                Authorization: `Bearer ${rawToken}`
             }
         }).then(response => {
             if (response.status === 200) {
@@ -30,12 +37,13 @@ const CaptainProtectWrapper = ({
                 setIsLoading(false)
             }
         })
-            .catch(err => {
-
-                localStorage.removeItem('token')
+            .catch((err) => {
+                console.warn('CaptainProtectWrapper: profile fetch failed', err.response?.status, err.response?.data)
+                // Clear the captain-specific token on auth failure
+                localStorage.removeItem('captain-token')
                 navigate('/captain-login')
             })
-    }, [ token ])
+    }, [ navigate, setCaptain ])
 
     
 
@@ -55,3 +63,7 @@ const CaptainProtectWrapper = ({
 }
 
 export default CaptainProtectWrapper
+
+CaptainProtectWrapper.propTypes = {
+    children: PropTypes.node
+}

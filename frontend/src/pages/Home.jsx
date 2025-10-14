@@ -42,7 +42,9 @@ const Home = () => {
 
 
     useEffect(() => {
-        if (socket && user) socket.emit("join", { userType: "user", userId: user._id })
+        if (socket && user && user._id) {
+            socket.emit("join", { userType: "user", userId: user._id })
+        }
     }, [ socket, user ])
 
     useEffect(() => {
@@ -55,17 +57,17 @@ const Home = () => {
         }
 
         const handleRideStarted = (ride) => {
-            console.log('ride')
+            console.debug('Socket event: ride-started', ride)
             setWaitingForDriver(false)
             navigate('/riding', { state: { ride } }) // Updated navigate to include ride data
         }
 
-        socket.on('ride-confirmed', handleRideConfirmed)
-        socket.on('ride-started', handleRideStarted)
+    socket.on('ride-confirmed', (r) => { console.debug('Socket event: ride-confirmed', r); handleRideConfirmed(r) })
+    socket.on('ride-started', (r) => { console.debug('Socket event: ride-started', r); handleRideStarted(r) })
 
         return () => {
-            socket.off('ride-confirmed', handleRideConfirmed)
-            socket.off('ride-started', handleRideStarted)
+            socket.off('ride-confirmed')
+            socket.off('ride-started')
         }
     }, [socket, navigate])
 

@@ -1,10 +1,10 @@
-import React from 'react'
+import PropTypes from 'prop-types'
 
 const WaitingForDriver = (props) => {
   return (
     <div>
       <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => {
-        props.waitingForDriver(false)
+        props.setWaitingForDriver(false)
       }}><i className="text-3xl text-gray-200 ri-arrow-down-wide-line"></i></h5>
 
       <div className='flex items-center justify-between'>
@@ -44,6 +44,28 @@ const WaitingForDriver = (props) => {
       </div>
     </div>
   )
+}
+
+WaitingForDriver.propTypes = {
+  setWaitingForDriver: PropTypes.func.isRequired,
+  ride: PropTypes.shape({
+    captain: PropTypes.shape({
+      fullname: PropTypes.shape({
+        firstname: PropTypes.string
+      }),
+      vehicle: PropTypes.shape({
+        plate: PropTypes.string
+      })
+    }),
+    otp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    pickup: PropTypes.string,
+    destination: PropTypes.string,
+    fare: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+  })
+}
+
+WaitingForDriver.defaultProps = {
+  ride: null
 }
 
 export default WaitingForDriver
