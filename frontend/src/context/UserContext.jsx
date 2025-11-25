@@ -17,6 +17,8 @@ export const UserDataContext = createContext(null) // Using null as a default
 const UserContext = ({ children }) => {
 
     const [user, setUser] = useState(null)
+    // Global ride state so any page can react to ride lifecycle events
+    const [ride, setRide] = useState(null)
 
     // Try to restore user profile from token on mount
     useEffect(() => {
@@ -39,7 +41,7 @@ const UserContext = ({ children }) => {
 
     // Create the value object once, or define it inside the return.
     // The key here is to pass the state (user) and the setter function (setUser).
-    const contextValue = { user, setUser }
+    const contextValue = { user, setUser, ride, setRide }
 
     return (
         // 3. Remove the redundant <div> and wrap children directly.

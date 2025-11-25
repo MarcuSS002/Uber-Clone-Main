@@ -30,27 +30,57 @@ const CaptainHome = () => {
             userType: 'captain'
         })
 
-        const updateLocation = () => {
-            // CORRECTION: For development/testing we send a hardcoded location
-            // near the user's logged pickup point so captains are considered "nearby".
-            const hardcodedLocation = {
-                lat: 28.630000,
-                lng: 77.210000
-            };
+        const updateLocation = async () => {
+            // If there's an active ride, try to geocode the ride destination
+            // so captains are considered "nearby" the location the user wants to reach.
+            let coords = null;
 
-            console.log(`Hardcoded location emitted for captain ${captain._id}:`, hardcodedLocation.lat, hardcodedLocation.lng);
+            try {
+                if (ride && ride.destination) {
+                    const q = encodeURIComponent(ride.destination);
+                    const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`;
+
+                    const resp = await fetch(url, {
+                        method: 'GET'
+                        // Note: Nominatim prefers a User-Agent header. In browsers it's not possible
+                        // to set a custom User-Agent; the browser UA will be sent instead.
+                    });
+
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                            coords = {
+                                lat: parseFloat(data[0].lat),
+                                lng: parseFloat(data[0].lon)
+                            };
+                        }
+                    } else {
+                        console.warn('Nominatim geocode failed with status', resp.status);
+                    }
+                }
+            } catch (err) {
+                console.warn('Error geocoding destination for captain update:', err);
+            }
+
+            // Fallback to a safe dev/test location if geocoding failed
+            if (!coords) {
+                coords = { lat: 28.630000, lng: 77.210000 };
+            }
+
+            console.log(`Emitting location for captain ${captain._id}:`, coords.lat, coords.lng);
 
             socket.emit('update-location-captain', {
                 userId: captain._id,
-                location: hardcodedLocation
+                location: coords
             });
         }
 
+        // Run immediately and then periodically
         updateLocation()
         const locationInterval = setInterval(updateLocation, 10000)
 
         return () => clearInterval(locationInterval)
-    }, [socket, captain])
+    }, [socket, captain, ride])
 
     // Register socket listener inside useEffect with cleanup to ensure it fires reliably
     useEffect(() => {

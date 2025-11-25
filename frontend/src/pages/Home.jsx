@@ -33,12 +33,12 @@ const Home = () => {
     const [ activeField, setActiveField ] = useState(null)
     const [ fare, setFare ] = useState({})
     const [ vehicleType, setVehicleType ] = useState(null)
-    const [ ride, setRide ] = useState(null)
+    // ride moved to global UserDataContext so socket listeners can update it centrally
 
     const navigate = useNavigate()
 
     const { socket } = useContext(SocketContext)
-    const { user } = useContext(UserDataContext)
+    const { user, ride } = useContext(UserDataContext)
 
 
     useEffect(() => {
@@ -50,24 +50,24 @@ const Home = () => {
     useEffect(() => {
         if (!socket) return;
 
-        const handleRideConfirmed = (ride) => {
+        const handleRideConfirmedLocal = () => {
             setVehicleFound(false)
             setWaitingForDriver(true)
-            setRide(ride)
+            // ride is set globally by SocketContext; Home just toggles panels
         }
 
-        const handleRideStarted = (ride) => {
-            console.debug('Socket event: ride-started', ride)
+        const handleRideStartedLocal = (r) => {
+            console.debug('Socket event: ride-started', r)
             setWaitingForDriver(false)
-            navigate('/riding', { state: { ride } }) // Updated navigate to include ride data
+            navigate('/riding', { state: { ride: r } }) // Navigate carrying ride data
         }
 
-    socket.on('ride-confirmed', (r) => { console.debug('Socket event: ride-confirmed', r); handleRideConfirmed(r) })
-    socket.on('ride-started', (r) => { console.debug('Socket event: ride-started', r); handleRideStarted(r) })
+        socket.on('ride-confirmed', (r) => { console.debug('Socket event: ride-confirmed (home)', r); handleRideConfirmedLocal(r) })
+        socket.on('ride-started', (r) => { console.debug('Socket event: ride-started (home)', r); handleRideStartedLocal(r) })
 
         return () => {
-            socket.off('ride-confirmed')
-            socket.off('ride-started')
+            socket.off('ride-confirmed', handleRideConfirmedLocal)
+            socket.off('ride-started', handleRideStartedLocal)
         }
     }, [socket, navigate])
 

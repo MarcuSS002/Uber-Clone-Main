@@ -1,6 +1,8 @@
 
-import { createContext, useEffect } from 'react';
+import { createContext, useEffect, useContext } from 'react';
+import PropTypes from 'prop-types';
 import { io } from 'socket.io-client';
+import { UserDataContext } from './UserContext';
 
 export const SocketContext = createContext();
 
@@ -12,6 +14,8 @@ const socket = io(`${import.meta.env.VITE_BASE_URL}`, {
 }); // Replace with your server URL
 
 const SocketProvider = ({ children }) => {
+    const { setRide } = useContext(UserDataContext)
+
     useEffect(() => {
         // Basic connection logic
         socket.on('connect', () => {
@@ -30,7 +34,29 @@ const SocketProvider = ({ children }) => {
             console.error('Socket reconnection failed');
         });
 
-    }, []);
+        // Listen for ride lifecycle events and update global ride state
+        const handleRideConfirmed = (r) => {
+            console.debug('Socket event (global): ride-confirmed', r)
+            if (typeof setRide === 'function') setRide(r)
+            // Also emit a DOM event so non-React listeners can pick it up if needed
+            try { window.dispatchEvent(new CustomEvent('ride-confirmed', { detail: r })) } catch (e) { console.warn('ride-confirmed DOM dispatch failed', e) }
+        }
+
+        const handleRideStarted = (r) => {
+            console.debug('Socket event (global): ride-started', r)
+            if (typeof setRide === 'function') setRide(r)
+            try { window.dispatchEvent(new CustomEvent('ride-started', { detail: r })) } catch (e) { console.warn('ride-started DOM dispatch failed', e) }
+        }
+
+        socket.on('ride-confirmed', handleRideConfirmed)
+        socket.on('ride-started', handleRideStarted)
+
+        return () => {
+            socket.off('ride-confirmed', handleRideConfirmed)
+            socket.off('ride-started', handleRideStarted)
+        }
+
+    }, [setRide]);
 
 
 
@@ -42,3 +68,7 @@ const SocketProvider = ({ children }) => {
 };
 
 export default SocketProvider;
+
+SocketProvider.propTypes = {
+    children: PropTypes.node
+}
