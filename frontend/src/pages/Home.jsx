@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useContext, lazy, Suspense } from 'react'
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import axios from 'axios';
+import { apiBaseUrl } from '../utils/api-config';
 import 'remixicon/fonts/remixicon.css'
 import LocationSearchPanel from '../components/LocationSearchPanel';
 import VehiclePanel from '../components/VehiclePanel';
@@ -95,7 +96,7 @@ const Home = () => {
                 return
             }
 
-            const resp = await axios.get(`${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`, {
+            const resp = await axios.get(`${apiBaseUrl}/maps/get-suggestions`, {
                 params: { input: val },
                 headers: { Authorization: `Bearer ${token}` }
             })
@@ -129,7 +130,7 @@ const Home = () => {
                 return
             }
 
-            const resp = await axios.get(`${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`, {
+            const resp = await axios.get(`${apiBaseUrl}/maps/get-suggestions`, {
                 params: { input: val },
                 headers: { Authorization: `Bearer ${token}` }
             })
@@ -222,7 +223,7 @@ const Home = () => {
                 return
             }
 
-            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/get-fare`, {
+            const response = await axios.get(`${apiBaseUrl}/rides/get-fare`, {
                 params: { pickup, destination },
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -253,7 +254,7 @@ const Home = () => {
                 return
             }
 
-            await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/create`, {
+            await axios.post(`${apiBaseUrl}/rides/create`, {
                 pickup,
                 destination,
                 vehicleType

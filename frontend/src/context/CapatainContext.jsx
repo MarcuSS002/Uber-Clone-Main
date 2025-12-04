@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 import { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiBaseUrl } from '../utils/api-config';
 
 export const CaptainDataContext = createContext();
 
@@ -31,7 +32,7 @@ const CaptainContext = ({ children }) => {
 
             setIsLoading(true);
             try {
-                const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/captains/profile`, {
+                const res = await axios.get(`${apiBaseUrl}/captains/profile`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (res?.data?.captain) {

@@ -3,11 +3,12 @@ import { createContext, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { io } from 'socket.io-client';
 import { UserDataContext } from './UserContext';
+import { apiBaseUrl } from '../utils/api-config';
 
 export const SocketContext = createContext();
 
 // Use a socket.io client with some sensible reconnect options and better error logging
-const socket = io(`${import.meta.env.VITE_BASE_URL}`, {
+const socket = io(`${apiBaseUrl}`, {
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
     transports: ['websocket', 'polling']

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { CaptainDataContext } from '../context/CapatainContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { apiBaseUrl } from '../utils/api-config'
 
 const CaptainProtectWrapper = ({
     children
@@ -27,7 +28,7 @@ const CaptainProtectWrapper = ({
         const mask = (t) => t ? `${t.slice(0,6)}...${t.slice(-6)}` : null
         console.log('CaptainProtectWrapper: using token', mask(rawToken))
 
-        axios.get(`${import.meta.env.VITE_BASE_URL}/captains/profile`, {
+        axios.get(`${apiBaseUrl}/captains/profile`, {
             headers: {
                 Authorization: `Bearer ${rawToken}`
             }

@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import PropTypes from 'prop-types'
+import { apiBaseUrl } from '../utils/api-config'
 
 const ConfirmRidePopUp = (props) => {
     const [ otp, setOtp ] = useState('')
@@ -23,7 +24,7 @@ const ConfirmRidePopUp = (props) => {
         }
 
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/start-ride`, {
+            const response = await axios.get(`${apiBaseUrl}/rides/start-ride`, {
                 params: {
                     rideId: props.ride._id,
                     otp: otp

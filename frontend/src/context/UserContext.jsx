@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 import { createContext, useState, useEffect } from 'react'
 import axios from 'axios'
+import { apiBaseUrl } from '../utils/api-config'
 
 /**
  * 1. Create and export the Context object.
@@ -27,7 +28,7 @@ const UserContext = ({ children }) => {
 
         (async () => {
             try {
-                const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
+                const res = await axios.get(`${apiBaseUrl}/users/profile`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
                 if (res?.data?.user) setUser(res.data.user)

@@ -9,6 +9,7 @@ import { useEffect, useContext } from 'react'
 import { SocketContext } from '../context/SocketContext'
 import { CaptainDataContext } from '../context/CapatainContext'
 import axios from 'axios'
+import { apiBaseUrl } from '../utils/api-config'
 
 const CaptainHome = () => {
 
@@ -111,7 +112,7 @@ const CaptainHome = () => {
                 return
             }
 
-            await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/confirm`, {
+            await axios.post(`${apiBaseUrl}/rides/confirm`, {
                 rideId: ride._id
             }, {
                 headers: {

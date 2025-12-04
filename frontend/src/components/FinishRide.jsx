@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { apiBaseUrl } from '../utils/api-config'
 
 
 const FinishRide = (props) => {
@@ -9,7 +10,7 @@ const FinishRide = (props) => {
     const navigate = useNavigate()
 
     async function endRide() {
-        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/end-ride`, {
+        const response = await axios.post(`${apiBaseUrl}/rides/end-ride`, {
 
             rideId: props.ride._id
 
