@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { UserDataContext } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { apiBaseUrl } from '../utils/api-config'
 
 const UserLogin = () => {
   const [ email, setEmail ] = useState('')
@@ -21,7 +22,7 @@ const UserLogin = () => {
     const payload = { email, password }
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, payload)
+      const response = await axios.post(`${apiBaseUrl}/users/login`, payload)
 
       if (response.status === 200) {
         const data = response.data
