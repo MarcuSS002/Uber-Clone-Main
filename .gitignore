@@ -1,5 +1,11 @@
 .env
 
+# Per-project env files
+/Backend/.env
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.*
+
 # Logs
 logs
 *.log
