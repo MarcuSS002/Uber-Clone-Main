@@ -2,6 +2,8 @@
 
 # Per-project env files
 /Backend/.env
+/Backend/.env.local
+/Backend/.env.*
 /frontend/.env
 /frontend/.env.local
 /frontend/.env.*
@@ -15,12 +17,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+/node_modules
+
+# Build outputs
 dist
 dist-ssr
+build
 *.local
 
-# Editor directories and files
+# IDE and Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -30,3 +37,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+Thumbs.db
+.env.production
+.env.staging
+
+# Cache
+.cache
+.eslintcache
+
+# Testing
+coverage
+.nyc_output
+
+# macOS
+.AppleDouble
+.LSOverride
+*.pem

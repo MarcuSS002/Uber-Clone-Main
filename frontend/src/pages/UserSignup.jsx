@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import { useState, useContext } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { UserDataContext } from '../context/UserContext'
@@ -11,13 +11,10 @@ const UserSignup = () => {
   const [ password, setPassword ] = useState('')
   const [ firstName, setFirstName ] = useState('')
   const [ lastName, setLastName ] = useState('')
-  const [ userData, setUserData ] = useState({})
 
   const navigate = useNavigate()
 
-
-
-  const { user, setUser } = useContext(UserDataContext)
+  const { setUser } = useContext(UserDataContext)
 
 
 
@@ -68,10 +65,9 @@ const UserSignup = () => {
             submitHandler(e)
           }}>
 
-            <h3 className='text-lg w-1/2  font-medium mb-2'>What's your name</h3>
+            <h3 className='text-lg w-1/2  font-medium mb-2'>What&apos;s your name</h3>
             <div className='flex gap-4 mb-7'>
               <input
-                required
                 className='bg-[#eeeeee] w-1/2 rounded-lg px-4 py-2 border  text-lg placeholder:text-base'
                 type="text"
                 placeholder='First name'

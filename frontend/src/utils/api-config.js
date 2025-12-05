@@ -9,14 +9,15 @@ export const getApiBaseUrl = () => {
   const baseUrl = import.meta.env.VITE_BASE_URL;
   
   if (!baseUrl || baseUrl === 'undefined') {
-    console.warn(
-      'VITE_BASE_URL not set. Falling back to location.origin. ' +
-      'Set VITE_BASE_URL in Vercel Project Settings → Environment Variables.'
-    );
-    // Fall back to same origin (for testing) or localhost backend
-    return import.meta.env.DEV 
+    const fallbackUrl = import.meta.env.DEV 
       ? 'http://localhost:5000' 
-      : window.location.origin;
+      : 'https://backend-3-e1dm.onrender.com'; // Hardcode production backend URL as last resort
+    
+    console.warn(
+      'VITE_BASE_URL not set. Falling back to:', fallbackUrl,
+      'Set VITE_BASE_URL in Vercel Project Settings → Environment Variables for proper configuration.'
+    );
+    return fallbackUrl;
   }
   
   return baseUrl;
