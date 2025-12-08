@@ -15,10 +15,19 @@ connectToDb();
 
 app.use(express.json());
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true
-}));
+// CORS Configuration: Allow requests from the frontend URL specified in environment variables
+// This prevents browsers from blocking cross-origin requests from the Vercel frontend
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Default to localhost for development
+  credentials: true, // Allow cookies and credentials to be sent with requests
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
+
+// Log CORS configuration for debugging
+console.log('CORS enabled for origin:', corsOptions.origin);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
