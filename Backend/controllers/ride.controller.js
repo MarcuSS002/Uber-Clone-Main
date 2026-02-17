@@ -3,6 +3,7 @@ const { validationResult } = require('express-validator');
 const mapService = require('../services/maps.service');
 const { sendMessageToSocketId } = require('../socket');
 const rideModel = require('../models/ride.model');
+const captainModel = require('../models/captain.model');
 
 
 module.exports.createRide = async (req, res) => {
@@ -26,29 +27,38 @@ module.exports.createRide = async (req, res) => {
 
         // Notification work should not crash the request-response flow. Wrap it separately.
         try {
-            const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
-            console.log(`pickupCoordinates:`, pickupCoordinates);
-            // Defensive check: ensure coordinates are valid before using them
-            if (!pickupCoordinates || typeof pickupCoordinates.lat !== 'number' || typeof pickupCoordinates.lng !== 'number') {
-                console.warn(`Could not get valid coordinates for pickup: ${pickup}. Skipping captain notification.`);
-                return;
-            }
-            
-            const captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.lat, pickupCoordinates.lng, 2);
-            console.log(captainsInRadius);
-
             // Make OTP blank for notifications
             ride.otp = "";
 
             // Fetch the newly created ride and populate the 'user' field (include fullname, email and socketId)
             const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate('user', 'fullname email socketId');
 
-            // optional debug log to confirm event payload
-            console.log(`Sending new-ride event to ${Array.isArray(captainsInRadius) ? captainsInRadius.length : 0} captains. rideId=${ride._id}`);
+            // Always notify online captains so captain-home receives rides immediately in dev/prod.
+            const onlineCaptains = await captainModel.find({
+                socketId: { $exists: true, $ne: '' },
+                status: 'active'
+            }).select('socketId');
 
-            // Only send to captains that have socketId
-            (captainsInRadius || []).filter(c => c && c.socketId).forEach(captain => {
-                sendMessageToSocketId(captain.socketId, {
+            // Keep nearby captains first when geocoding succeeds, but do not block overall delivery.
+            let captainsInRadius = [];
+            try {
+                const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
+                if (pickupCoordinates && typeof pickupCoordinates.lat === 'number' && typeof pickupCoordinates.lng === 'number') {
+                    captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.lat, pickupCoordinates.lng, 2);
+                }
+            } catch (geoErr) {
+                console.warn('createRide: geocode/radius lookup failed, continuing with online captains only:', geoErr.message);
+            }
+
+            const captainSocketIds = new Set([
+                ...(captainsInRadius || []).map(c => c?.socketId).filter(Boolean),
+                ...(onlineCaptains || []).map(c => c?.socketId).filter(Boolean)
+            ]);
+
+            console.log(`Sending new-ride event to ${captainSocketIds.size} captains. rideId=${ride._id}`);
+
+            captainSocketIds.forEach((socketId) => {
+                sendMessageToSocketId(socketId, {
                     event: 'new-ride',
                     data: rideWithUser
                 });
