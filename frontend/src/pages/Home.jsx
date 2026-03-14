@@ -24,7 +24,6 @@ const Home = () => {
   const vehicleFoundRef = useRef(null);
   const waitingForDriverRef = useRef(null);
   // NOTE: panelRef was removed — animation is controlled by classes/state.
-  const panelCloseRef = useRef(null);
   const [vehiclePanel, setVehiclePanel] = useState(false);
   const [confirmRidePanel, setConfirmRidePanel] = useState(false);
   const [vehicleFound, setVehicleFound] = useState(false);
@@ -151,23 +150,6 @@ const Home = () => {
   const submitHandler = (e) => {
     e.preventDefault();
   };
-
-  useGSAP(
-    function () {
-      if (panelOpen) {
-        // NOTE: Removed height and padding GSAP.
-        // The full-screen appearance is now handled by h-screen and flex classes in JSX.
-        gsap.to(panelCloseRef.current, {
-          opacity: 1,
-        });
-      } else {
-        gsap.to(panelCloseRef.current, {
-          opacity: 0,
-        });
-      }
-    },
-    [panelOpen],
-  );
 
   useGSAP(
     function () {
@@ -334,15 +316,6 @@ const Home = () => {
         <div className="p-6 flex-shrink-0">
           {" "}
           {/* KEY CHANGE: flex-shrink-0 */}
-          <h5
-            ref={panelCloseRef}
-            onClick={() => {
-              setPanelOpen(false); // Closes panel, triggering return to map
-            }}
-            className="absolute opacity-0 right-6 top-6 text-2xl"
-          >
-            <i className="ri-arrow-down-wide-line"></i>
-          </h5>
           <h4 className="text-2xl font-semibold">Find a trip</h4>
           <form
             className="relative py-3"
