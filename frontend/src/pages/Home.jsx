@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState, useContext, lazy, Suspense } from "react";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
+import { useEffect, useState, useContext, lazy, Suspense } from "react";
 import axios from "axios";
 import { apiBaseUrl } from "../utils/api-config";
 import "remixicon/fonts/remixicon.css";
@@ -19,11 +17,6 @@ const Home = () => {
   const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
-  const vehiclePanelRef = useRef(null);
-  const confirmRidePanelRef = useRef(null);
-  const vehicleFoundRef = useRef(null);
-  const waitingForDriverRef = useRef(null);
-  // NOTE: panelRef was removed — animation is controlled by classes/state.
   const [vehiclePanel, setVehiclePanel] = useState(false);
   const [confirmRidePanel, setConfirmRidePanel] = useState(false);
   const [vehicleFound, setVehicleFound] = useState(false);
@@ -153,66 +146,6 @@ const Home = () => {
     e.preventDefault();
   };
 
-  useGSAP(
-    function () {
-      if (vehiclePanel) {
-        gsap.to(vehiclePanelRef.current, {
-          transform: "translateY(0)",
-        });
-      } else {
-        gsap.to(vehiclePanelRef.current, {
-          transform: "translateY(100%)",
-        });
-      }
-    },
-    [vehiclePanel],
-  );
-
-  useGSAP(
-    function () {
-      if (confirmRidePanel) {
-        gsap.to(confirmRidePanelRef.current, {
-          transform: "translateY(0)",
-        });
-      } else {
-        gsap.to(confirmRidePanelRef.current, {
-          transform: "translateY(100%)",
-        });
-      }
-    },
-    [confirmRidePanel],
-  );
-
-  useGSAP(
-    function () {
-      if (vehicleFound) {
-        gsap.to(vehicleFoundRef.current, {
-          transform: "translateY(0)",
-        });
-      } else {
-        gsap.to(vehicleFoundRef.current, {
-          transform: "translateY(100%)",
-        });
-      }
-    },
-    [vehicleFound],
-  );
-
-  useGSAP(
-    function () {
-      if (waitingForDriver) {
-        gsap.to(waitingForDriverRef.current, {
-          transform: "translateY(0)",
-        });
-      } else {
-        gsap.to(waitingForDriverRef.current, {
-          transform: "translateY(100%)",
-        });
-      }
-    },
-    [waitingForDriver],
-  );
-
   async function findTrip() {
     setVehiclePanel(true);
     // This sets the panelOpen state to false, triggering the GSAP close and class change.
@@ -282,6 +215,7 @@ const Home = () => {
       // 2. Optionally, reset state to an earlier step
       // (e.g., close LookingForDriver and show ConfirmRide/VehiclePanel)
       setVehicleFound(false);
+      setWaitingForDriver(false);
       setConfirmRidePanel(true); // Go back to the confirm ride panel
 
       // NOTE: If the server is sending an actual 500 error,
@@ -306,130 +240,121 @@ const Home = () => {
         </Suspense>
       </div>
 
-      {/* 2. INPUT/SEARCH PANEL CONTAINER (bottom by default, fixed-top when active) */}
+      {/* 2. INPUT/SEARCH PANEL CONTAINER */}
       {!isBottomSheetOpen && (
-      <div
-        className={`${
-          panelOpen
-            ? "fixed top-0 left-0 right-0 h-screen z-40 shadow-lg bg-white flex flex-col" // KEY CHANGE: h-screen & flex flex-col
-            : "h-[30%] w-full bg-white relative z-20"
-        }`}
-      >
-        {/* HEADER/INPUTS SECTION (Fixed Height) */}
-        <div className="p-6 flex-shrink-0">
-          {" "}
-          {/* KEY CHANGE: flex-shrink-0 */}
-          <h4 className="text-2xl font-semibold">Find a trip</h4>
-          <form
-            className="relative py-3"
-            onSubmit={(e) => {
-              submitHandler(e);
-            }}
-          >
-            <div className="line absolute h-16 w-1 top-[50%] -translate-y-1/2 left-5 bg-gray-700 rounded-full"></div>
-            <input
-              onFocus={() => {
-                setPanelOpen(true);
-                setActiveField("pickup");
+        <div
+          className={`${
+            panelOpen
+              ? "fixed inset-0 z-40 flex flex-col bg-white shadow-lg"
+              : "relative z-20 h-[30%] w-full bg-white"
+          }`}
+        >
+          <div className="flex-shrink-0 p-6">
+            <h4 className="text-2xl font-semibold">Find a trip</h4>
+            <form
+              className="relative py-3"
+              onSubmit={(e) => {
+                submitHandler(e);
               }}
-              value={pickup}
-              onChange={handlePickupChange}
-              className="bg-[#eee] px-12 py-2 text-lg rounded-lg w-full"
-              type="text"
-              placeholder="Add a pick-up location"
-            />
-            <input
-              onFocus={() => {
-                setPanelOpen(true);
-                setActiveField("destination");
-              }}
-              value={destination}
-              onChange={handleDestinationChange}
-              className="bg-[#eee] px-12 py-2 text-lg rounded-lg w-full  mt-3"
-              type="text"
-              placeholder="Enter your destination"
-            />
-          </form>
-          <button
-            onClick={findTrip}
-            className="bg-black text-white px-4 py-2 rounded-lg mt-3 w-full"
-          >
-            Find Trip
-          </button>
-        </div>
-
-        {/* LOCATION SUGGESTIONS PANEL (Takes Remaining Height) */}
-        {panelOpen && (
-          <div className="flex-grow overflow-y-auto p-6 pt-0">
-            {" "}
-            {/* KEY CHANGE: flex-grow & overflow-y-auto */}
-            <LocationSearchPanel
-              suggestions={
-                activeField === "pickup"
-                  ? pickupSuggestions
-                  : destinationSuggestions
-              }
-              setPanelOpen={setPanelOpen}
-              setPickup={setPickup}
-              setDestination={setDestination}
-              activeField={activeField}
-            />
+            >
+              <div className="absolute left-5 top-1/2 h-16 w-1 -translate-y-1/2 rounded-full bg-gray-700"></div>
+              <input
+                onFocus={() => {
+                  setPanelOpen(true);
+                  setActiveField("pickup");
+                }}
+                value={pickup}
+                onChange={handlePickupChange}
+                className="w-full rounded-lg bg-[#eee] px-12 py-2 text-lg"
+                type="text"
+                placeholder="Add a pick-up location"
+              />
+              <input
+                onFocus={() => {
+                  setPanelOpen(true);
+                  setActiveField("destination");
+                }}
+                value={destination}
+                onChange={handleDestinationChange}
+                className="mt-3 w-full rounded-lg bg-[#eee] px-12 py-2 text-lg"
+                type="text"
+                placeholder="Enter your destination"
+              />
+            </form>
+            <button
+              onClick={findTrip}
+              className="mt-3 w-full rounded-lg bg-black px-4 py-2 text-white"
+            >
+              Find Trip
+            </button>
           </div>
-        )}
-      </div>
+
+          {panelOpen && (
+            <div className="flex-grow overflow-y-auto p-6 pt-0">
+              <LocationSearchPanel
+                suggestions={
+                  activeField === "pickup"
+                    ? pickupSuggestions
+                    : destinationSuggestions
+                }
+                setPanelOpen={setPanelOpen}
+                setPickup={setPickup}
+                setDestination={setDestination}
+                activeField={activeField}
+              />
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Overlay panels (Vehicle Selection, etc.) remain fixed at the bottom */}
+      {vehiclePanel && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white px-3 py-10 pt-12 shadow-2xl">
+          <VehiclePanel
+            selectVehicle={setVehicleType}
+            fare={fare}
+            setConfirmRidePanel={setConfirmRidePanel}
+            setVehiclePanel={setVehiclePanel}
+          />
+        </div>
+      )}
 
-      <div
-        ref={vehiclePanelRef}
-        className="fixed w-full z-40 bottom-0 translate-y-full bg-white px-3 py-10 pt-12"
-      >
-        <VehiclePanel
-          selectVehicle={setVehicleType}
-          fare={fare}
-          setConfirmRidePanel={setConfirmRidePanel}
-          setVehiclePanel={setVehiclePanel}
-        />
-      </div>
-      <div
-        ref={confirmRidePanelRef}
-        className="fixed w-full z-40 bottom-0 translate-y-full bg-white px-3 pt-3 pb-3"
-      >
-        <ConfirmRide
-          createRide={createRide}
-          pickup={pickup}
-          destination={destination}
-          fare={fare}
-          vehicleType={vehicleType}
-          setConfirmRidePanel={setConfirmRidePanel}
-          setVehicleFound={setVehicleFound}
-        />
-      </div>
-      <div
-        ref={vehicleFoundRef}
-        className="fixed w-full z-40 bottom-0 translate-y-full bg-white px-3 py-6 pt-3"
-      >
-        <LookingForDriver
-          createRide={createRide}
-          pickup={pickup}
-          destination={destination}
-          fare={fare}
-          vehicleType={vehicleType}
-          setVehicleFound={setVehicleFound}
-        />
-      </div>
-      <div
-        ref={waitingForDriverRef}
-        className="fixed w-full z-40 bottom-0 translate-y-full bg-white px-3 py-6 pt-12"
-      >
-        <WaitingForDriver
-          ride={ride}
-          setVehicleFound={setVehicleFound}
-          setWaitingForDriver={setWaitingForDriver}
-          waitingForDriver={waitingForDriver}
-        />
-      </div>
+      {confirmRidePanel && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white px-3 pb-3 pt-3 shadow-2xl">
+          <ConfirmRide
+            createRide={createRide}
+            pickup={pickup}
+            destination={destination}
+            fare={fare}
+            vehicleType={vehicleType}
+            setConfirmRidePanel={setConfirmRidePanel}
+            setVehicleFound={setVehicleFound}
+          />
+        </div>
+      )}
+
+      {vehicleFound && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white px-3 py-6 pt-3 shadow-2xl">
+          <LookingForDriver
+            createRide={createRide}
+            pickup={pickup}
+            destination={destination}
+            fare={fare}
+            vehicleType={vehicleType}
+            setVehicleFound={setVehicleFound}
+          />
+        </div>
+      )}
+
+      {waitingForDriver && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white px-3 py-6 pt-12 shadow-2xl">
+          <WaitingForDriver
+            ride={ride}
+            setVehicleFound={setVehicleFound}
+            setWaitingForDriver={setWaitingForDriver}
+            waitingForDriver={waitingForDriver}
+          />
+        </div>
+      )}
     </div>
   );
 };
