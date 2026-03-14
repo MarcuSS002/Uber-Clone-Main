@@ -15,15 +15,57 @@ connectToDb();
 
 app.use(express.json());
 
-// CORS Configuration: Allow requests from the frontend URL specified in environment variables
-// This prevents browsers from blocking cross-origin requests from the Vercel frontend
+const normalizeOrigin = (value) => {
+  if (!value) return null;
+
+  try {
+    return new URL(value).origin;
+  } catch {
+    return value.trim().replace(/\/+$/, '');
+  }
+};
+
+const configuredOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((url) => normalizeOrigin(url.trim()))
+  .filter(Boolean);
+
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
+
+const allowedOrigins = new Set([ ...defaultOrigins, ...configuredOrigins ]);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  if (allowedOrigins.has(normalizedOrigin)) {
+    return true;
+  }
+
+  // Allow local dev servers on localhost/127.0.0.1 regardless of port.
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalizedOrigin)) {
+    return true;
+  }
+
+  // Allow Vercel production/preview deployments like *.vercel.app
+  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalizedOrigin)) {
+    return true;
+  }
+
+  return false;
+};
+
 const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',').map(url => url.trim());
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.warn('Blocked by CORS for origin:', origin);
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   credentials: true, // Allow cookies and credentials to be sent with requests
@@ -34,7 +76,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Log CORS configuration for debugging
-console.log('CORS enabled for origins:', (process.env.FRONTEND_URL || 'http://localhost:3000').split(','));
+console.log('CORS enabled for origins:', Array.from(allowedOrigins));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -56,4 +98,3 @@ app.use('/admin', adminRoutes);
 
 
 module.exports = app;
-

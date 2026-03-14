@@ -12,6 +12,8 @@
   "dependencies": {
     "@gsap/react": "^2.1.1",
     "axios": "^1.7.7",
+    "baseline-browser-mapping": "^2.10.7",
+    "caniuse-lite": "^1.0.30001778",
     "gsap": "^3.12.5",
     "leaflet": "^1.9.4",
     "react": "^18.3.1",
