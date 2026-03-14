@@ -2,6 +2,7 @@
 import { createContext, useState, useEffect } from 'react'
 import axios from 'axios'
 import { apiBaseUrl } from '../utils/api-config'
+import { getStoredUser, setStoredUser, clearStoredUser } from '../utils/auth-storage'
 
 /**
  * 1. Create and export the Context object.
@@ -17,28 +18,45 @@ export const UserDataContext = createContext(null) // Using null as a default
  */
 const UserContext = ({ children }) => {
 
-    const [user, setUser] = useState(null)
+    const [user, setUserState] = useState(() => getStoredUser())
     // Global ride state so any page can react to ride lifecycle events
     const [ride, setRide] = useState(null)
+
+    const setUser = (userData) => {
+        setUserState(userData)
+
+        if (userData) {
+            setStoredUser(userData)
+            return
+        }
+
+        clearStoredUser()
+    }
 
     // Try to restore user profile from token on mount
     useEffect(() => {
         const token = localStorage.getItem('token')
         if (!token) return
+        if (user) return
 
         (async () => {
             try {
                 const res = await axios.get(`${apiBaseUrl}/users/profile`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
-                if (res?.data?.user) setUser(res.data.user)
+                if (res?.data?.user) {
+                    setUser(res.data.user)
+                }
             } catch (err) {
                 console.warn('UserContext: failed to restore user', err?.response?.status)
                 // remove stale token on 401
-                if (err?.response?.status === 401) localStorage.removeItem('token')
+                if (err?.response?.status === 401) {
+                    localStorage.removeItem('token')
+                    clearStoredUser()
+                }
             }
         })()
-    }, [])
+    }, [user])
 
     // Create the value object once, or define it inside the return.
     // The key here is to pass the state (user) and the setter function (setUser).

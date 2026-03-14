@@ -3,6 +3,7 @@ import { UserDataContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { apiBaseUrl } from "../utils/api-config";
+import { getStoredUser, clearStoredUser } from "../utils/auth-storage";
 
 const UserProtectWrapper = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -13,6 +14,15 @@ const UserProtectWrapper = ({ children }) => {
   useEffect(() => {
     if (!token) {
       navigate("/login");
+      return;
+    }
+
+    if (user || getStoredUser()) {
+      if (!user) {
+        setUser(getStoredUser());
+      }
+      setIsLoading(false);
+      return;
     }
 
     axios
@@ -23,16 +33,17 @@ const UserProtectWrapper = ({ children }) => {
       })
       .then((response) => {
         if (response.status === 200) {
-          setUser(response.data);
+          setUser(response.data.user);
           setIsLoading(false);
         }
       })
       .catch((err) => {
         console.log(err);
         localStorage.removeItem("token");
+        clearStoredUser();
         navigate("/login");
       });
-  }, [token]);
+  }, [navigate, setUser, token, user]);
 
   if (isLoading) {
     return <div>Loading...</div>;

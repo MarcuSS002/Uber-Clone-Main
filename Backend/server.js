@@ -7,6 +7,10 @@ const server = http.createServer(app);
 
 initializeSocket(server);
 
-server.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
+if (require.main === module) {
+    server.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
+}
+
+module.exports = app;

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { UserDataContext } from '../context/UserContext'
 import { apiBaseUrl } from '../utils/api-config'
+import { setStoredUser } from '../utils/auth-storage'
 
 
 
@@ -36,6 +37,7 @@ const UserSignup = () => {
       if (response.status === 201) {
         const data = response.data
         setUser(data.user)
+        setStoredUser(data.user)
         localStorage.setItem('token', data.token)
         navigate('/home')
       }

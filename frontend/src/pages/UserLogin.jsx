@@ -4,6 +4,7 @@ import { UserDataContext } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { apiBaseUrl } from '../utils/api-config'
+import { setStoredUser } from '../utils/auth-storage'
 
 const UserLogin = () => {
   const [ email, setEmail ] = useState('')
@@ -27,6 +28,7 @@ const UserLogin = () => {
       if (response.status === 200) {
         const data = response.data
         setUser(data.user)
+        setStoredUser(data.user)
         localStorage.setItem('token', data.token)
         navigate('/home')
       } else {

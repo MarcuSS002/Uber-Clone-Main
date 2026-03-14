@@ -3,6 +3,15 @@ const captainService = require('../services/captain.service');
 const blackListTokenModel = require('../models/blacklistToken.model');
 const { validationResult } = require('express-validator');
 
+const serializeCaptain = (captain) => ({
+    _id: captain._id,
+    fullname: captain.fullname,
+    email: captain.email,
+    socketId: captain.socketId ?? null,
+    status: captain.status,
+    vehicle: captain.vehicle,
+    location: captain.location,
+});
 
 module.exports.registerCaptain = async (req, res, next) => {
 
@@ -35,7 +44,7 @@ module.exports.registerCaptain = async (req, res, next) => {
 
     const token = captain.generateAuthToken();
 
-    res.status(201).json({ token, captain });
+    res.status(201).json({ token, captain: serializeCaptain(captain) });
 
 }
 
@@ -63,11 +72,11 @@ module.exports.loginCaptain = async (req, res, next) => {
 
     res.cookie('token', token);
 
-    res.status(200).json({ token, captain });
+    res.status(200).json({ token, captain: serializeCaptain(captain) });
 }
 
 module.exports.getCaptainProfile = async (req, res, next) => {
-    res.status(200).json({ captain: req.captain });
+    res.status(200).json({ captain: serializeCaptain(req.captain) });
 }
 
 module.exports.logoutCaptain = async (req, res, next) => {

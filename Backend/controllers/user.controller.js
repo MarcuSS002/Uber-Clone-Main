@@ -3,6 +3,13 @@ const userService = require("../services/user.service");
 const { validationResult } = require("express-validator");
 const blackListTokenModel = require("../models/blacklistToken.model");
 
+const serializeUser = (user) => ({
+  _id: user._id,
+  fullname: user.fullname,
+  email: user.email,
+  socketId: user.socketId ?? null,
+});
+
 module.exports.registerUser = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -28,7 +35,7 @@ module.exports.registerUser = async (req, res, next) => {
 
   const token = user.generateAuthToken();
 
-  res.status(201).json({ token, user });
+  res.status(201).json({ token, user: serializeUser(user) });
 };
 
 module.exports.loginUser = async (req, res, next) => {
@@ -55,11 +62,11 @@ module.exports.loginUser = async (req, res, next) => {
 
   res.cookie("token", token);
 
-  res.status(200).json({ token, user });
+  res.status(200).json({ token, user: serializeUser(user) });
 };
 
 module.exports.getUserProfile = async (req, res, next) => {
-  res.status(200).json(req.user);
+  res.status(200).json({ user: serializeUser(req.user) });
 };
 
 module.exports.logoutUser = async (req, res, next) => {

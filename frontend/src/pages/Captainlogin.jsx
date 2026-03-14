@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { CaptainDataContext } from '../context/CapatainContext'
 import { apiBaseUrl } from '../utils/api-config'
+import { setStoredCaptain } from '../utils/auth-storage'
 
 const Captainlogin = () => {
 
@@ -26,9 +27,10 @@ const Captainlogin = () => {
 
       if (response.status === 200) {
         const data = response.data
-  setCaptain(data.captain)
-  // Store captain token separately to avoid overwriting user token
-  localStorage.setItem('captain-token', data.token)
+        setCaptain(data.captain)
+        setStoredCaptain(data.captain)
+        // Store captain token separately to avoid overwriting user token
+        localStorage.setItem('captain-token', data.token)
         navigate('/captain-home')
       } else {
         setError('Login failed. Please check your credentials.')

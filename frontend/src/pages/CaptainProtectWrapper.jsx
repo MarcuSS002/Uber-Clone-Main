@@ -4,6 +4,7 @@ import { CaptainDataContext } from '../context/CapatainContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { apiBaseUrl } from '../utils/api-config'
+import { getStoredCaptain, clearStoredCaptain } from '../utils/auth-storage'
 
 const CaptainProtectWrapper = ({
     children
@@ -25,6 +26,16 @@ const CaptainProtectWrapper = ({
             return
         }
 
+        if (getStoredCaptain()) {
+            if (!localStorage.getItem('captain-token') && localStorage.getItem('token')) {
+                localStorage.setItem('captain-token', localStorage.getItem('token'))
+            }
+
+            setCaptain(getStoredCaptain())
+            setIsLoading(false)
+            return
+        }
+
         const mask = (t) => t ? `${t.slice(0,6)}...${t.slice(-6)}` : null
         console.log('CaptainProtectWrapper: using token', mask(rawToken))
 
@@ -42,6 +53,7 @@ const CaptainProtectWrapper = ({
                 console.warn('CaptainProtectWrapper: profile fetch failed', err.response?.status, err.response?.data)
                 // Clear the captain-specific token on auth failure
                 localStorage.removeItem('captain-token')
+                clearStoredCaptain()
                 navigate('/captain-login')
             })
     }, [ navigate, setCaptain ])

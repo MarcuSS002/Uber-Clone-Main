@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { clearStoredUser } from '../utils/auth-storage'
 
 export const UserLogout = () => {
 
@@ -13,6 +14,7 @@ export const UserLogout = () => {
     }).then((response) => {
         if (response.status === 200) {
             localStorage.removeItem('token')
+            clearStoredUser()
             navigate('/login')
         }
     })

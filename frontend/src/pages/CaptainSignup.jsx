@@ -4,6 +4,7 @@ import { CaptainDataContext } from '../context/CapatainContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { apiBaseUrl } from '../utils/api-config'
+import { setStoredCaptain } from '../utils/auth-storage'
 
 const CaptainSignup = () => {
 
@@ -45,6 +46,7 @@ const CaptainSignup = () => {
     if (response.status === 201) {
       const data = response.data
       setCaptain(data.captain)
+      setStoredCaptain(data.captain)
       // store captain token under its own key so it doesn't conflict with user token
       localStorage.setItem('captain-token', data.token)
       navigate('/captain-home')
