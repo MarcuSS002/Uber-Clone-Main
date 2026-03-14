@@ -33,6 +33,8 @@ const Home = () => {
   const [activeField, setActiveField] = useState(null);
   const [fare, setFare] = useState({});
   const [vehicleType, setVehicleType] = useState(null);
+  const isBottomSheetOpen =
+    vehiclePanel || confirmRidePanel || vehicleFound || waitingForDriver;
   // ride moved to global UserDataContext so socket listeners can update it centrally
 
   const navigate = useNavigate();
@@ -305,6 +307,7 @@ const Home = () => {
       </div>
 
       {/* 2. INPUT/SEARCH PANEL CONTAINER (bottom by default, fixed-top when active) */}
+      {!isBottomSheetOpen && (
       <div
         className={`${
           panelOpen
@@ -374,6 +377,7 @@ const Home = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Overlay panels (Vehicle Selection, etc.) remain fixed at the bottom */}
 
@@ -404,7 +408,7 @@ const Home = () => {
       </div>
       <div
         ref={vehicleFoundRef}
-        className="fixed w-full z-40 bottom-0 translate-y-full bg-white px-3 py-6 pt-12"
+        className="fixed w-full z-40 bottom-0 translate-y-full bg-white px-3 py-6 pt-3"
       >
         <LookingForDriver
           createRide={createRide}
