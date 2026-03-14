@@ -390,7 +390,7 @@ const Home = () => {
       </div>
       <div
         ref={confirmRidePanelRef}
-        className="fixed w-full z-40 bottom-0 translate-y-full bg-white px-3 py-6 pt-3"
+        className="fixed w-full z-40 bottom-0 translate-y-full bg-white px-3 pt-3 pb-3"
       >
         <ConfirmRide
           createRide={createRide}

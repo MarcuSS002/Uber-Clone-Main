@@ -14,7 +14,7 @@ const ConfirmRide = (props) => {
     const currentVehicleImage = vehicleImages[props.vehicleType] || vehicleImages['car']; // Fallback to 'car' image if type isn't mapped
 
     return (
-        <div>
+        <div className='rounded-t-3xl bg-white'>
             <h3 className='text-2xl font-semibold mb-5'>Confirm your Ride</h3>
 
             <div className='flex gap-2 justify-between flex-col items-center'>
@@ -22,14 +22,14 @@ const ConfirmRide = (props) => {
                 <img className='h-20' src={currentVehicleImage} alt={`Image of a ${props.vehicleImages}`} />
                 
                 <div className='w-full mt-5'>
-                    <div className='flex items-center gap-5 p-3 border-b-2'>
+                    <div className='flex items-center gap-5 p-3 border-b border-gray-200'>
                         <i className="ri-map-pin-user-fill"></i>
                         <div>
                             <h3 className='text-lg font-medium'>{props.pickup}</h3>
                             <p className='text-sm -mt-1 text-gray-600'>{props.pickup}</p>
                         </div>
                     </div>
-                    <div className='flex items-center gap-5 p-3 border-b-2'>
+                    <div className='flex items-center gap-5 p-3 border-b border-gray-200'>
                         <i className="text-lg ri-map-pin-2-fill"></i>
                         <div>
                             <h3 className='text-lg font-medium'>{props.destination}</h3>
@@ -49,7 +49,7 @@ const ConfirmRide = (props) => {
                     props.setConfirmRidePanel(false)
                     props.createRide()
 
-                }} className='w-full mt-5 bg-green-600 text-white font-semibold p-2 rounded-lg'>Confirm</button>
+                }} className='w-full mt-5 rounded-2xl bg-green-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-green-700'>Confirm Ride</button>
             </div>
         </div>
     )
