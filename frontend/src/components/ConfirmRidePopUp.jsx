@@ -74,7 +74,7 @@ const ConfirmRidePopUp = (props) => {
   return (
     <div
       ref={rootRef}
-      className="fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12"
+      className="fixed inset-x-0 bottom-0 z-[600] max-h-[92vh] overflow-y-auto translate-y-full rounded-t-[32px] bg-white px-3 py-8 pt-10 shadow-[0_-20px_60px_rgba(15,23,42,0.18)]"
     >
       <h3 className="text-2xl font-semibold mb-5">
         Confirm this ride to Start

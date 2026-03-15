@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { apiBaseUrl } from "../utils/api-config";
 import {
@@ -14,11 +14,7 @@ const CaptainContext = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const updateCaptain = (captainData) => {
-    setCaptain(captainData);
-  };
-
-  const setCaptain = (captainData) => {
+  const setCaptain = useCallback((captainData) => {
     setCaptainState(captainData);
 
     if (captainData) {
@@ -27,7 +23,11 @@ const CaptainContext = ({ children }) => {
     }
 
     clearStoredCaptain();
-  };
+  }, []);
+
+  const updateCaptain = useCallback((captainData) => {
+    setCaptain(captainData);
+  }, [setCaptain]);
 
   const value = {
     captain,
@@ -74,7 +74,7 @@ const CaptainContext = ({ children }) => {
     };
 
     tryLoadCaptain();
-  }, [captain]);
+  }, [captain, setCaptain]);
 
   return (
     <CaptainDataContext.Provider value={value}>

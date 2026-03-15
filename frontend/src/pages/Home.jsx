@@ -55,19 +55,21 @@ const Home = () => {
       setWaitingForDriver(false);
       navigate("/riding", { state: { ride: r } }); // Navigate carrying ride data
     };
-
-    socket.on("ride-confirmed", (r) => {
+    const handleRideConfirmed = (r) => {
       console.debug("Socket event: ride-confirmed (home)", r);
       handleRideConfirmedLocal(r);
-    });
-    socket.on("ride-started", (r) => {
+    };
+    const handleRideStarted = (r) => {
       console.debug("Socket event: ride-started (home)", r);
       handleRideStartedLocal(r);
-    });
+    };
+
+    socket.on("ride-confirmed", handleRideConfirmed);
+    socket.on("ride-started", handleRideStarted);
 
     return () => {
-      socket.off("ride-confirmed", handleRideConfirmedLocal);
-      socket.off("ride-started", handleRideStartedLocal);
+      socket.off("ride-confirmed", handleRideConfirmed);
+      socket.off("ride-started", handleRideStarted);
     };
   }, [socket, navigate]);
 

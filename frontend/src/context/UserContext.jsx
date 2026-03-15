@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { createContext, useState, useEffect } from 'react'
+import { createContext, useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { apiBaseUrl } from '../utils/api-config'
 import { getStoredUser, setStoredUser, clearStoredUser } from '../utils/auth-storage'
@@ -22,7 +22,7 @@ const UserContext = ({ children }) => {
     // Global ride state so any page can react to ride lifecycle events
     const [ride, setRide] = useState(null)
 
-    const setUser = (userData) => {
+    const setUser = useCallback((userData) => {
         setUserState(userData)
 
         if (userData) {
@@ -31,7 +31,7 @@ const UserContext = ({ children }) => {
         }
 
         clearStoredUser()
-    }
+    }, [])
 
     // Try to restore user profile from token on mount
     useEffect(() => {
@@ -56,7 +56,7 @@ const UserContext = ({ children }) => {
                 }
             }
         })()
-    }, [user])
+    }, [user, setUser])
 
     // Create the value object once, or define it inside the return.
     // The key here is to pass the state (user) and the setter function (setUser).

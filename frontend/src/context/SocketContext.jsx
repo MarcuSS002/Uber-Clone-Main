@@ -18,24 +18,24 @@ const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     // Basic connection logic
-    socket.on("connect", () => {
+    const handleConnect = () => {
       console.log("Connected to server");
-    });
+    };
 
-    socket.on("disconnect", () => {
+    const handleDisconnect = () => {
       console.log("Disconnected from server");
-    });
+    };
 
-    socket.on("connect_error", (err) => {
+    const handleConnectError = (err) => {
       console.error(
         "Socket connect_error:",
         err && err.message ? err.message : err,
       );
-    });
+    };
 
-    socket.io.on("reconnect_failed", () => {
+    const handleReconnectFailed = () => {
       console.error("Socket reconnection failed");
-    });
+    };
 
     // Listen for ride lifecycle events and update global ride state
     const handleRideConfirmed = (r) => {
@@ -59,10 +59,18 @@ const SocketProvider = ({ children }) => {
       }
     };
 
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("connect_error", handleConnectError);
+    socket.io.on("reconnect_failed", handleReconnectFailed);
     socket.on("ride-confirmed", handleRideConfirmed);
     socket.on("ride-started", handleRideStarted);
 
     return () => {
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("connect_error", handleConnectError);
+      socket.io.off("reconnect_failed", handleReconnectFailed);
       socket.off("ride-confirmed", handleRideConfirmed);
       socket.off("ride-started", handleRideStarted);
     };

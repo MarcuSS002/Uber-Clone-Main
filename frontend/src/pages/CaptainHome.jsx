@@ -26,10 +26,23 @@ const CaptainHome = () => {
   useEffect(() => {
     if (!socket || !captain || !captain._id) return;
 
-    socket.emit("join", {
-      userId: captain._id,
-      userType: "captain",
-    });
+    const emitJoin = () => {
+      socket.emit("join", {
+        userId: captain._id,
+        userType: "captain",
+      });
+    };
+
+    emitJoin();
+    socket.on("connect", emitJoin);
+
+    return () => {
+      socket.off("connect", emitJoin);
+    };
+  }, [socket, captain?._id]);
+
+  useEffect(() => {
+    if (!socket || !captain || !captain._id) return;
 
     const updateLocation = async () => {
       // If there's an active ride, try to geocode the ride destination
@@ -85,7 +98,7 @@ const CaptainHome = () => {
     const locationInterval = setInterval(updateLocation, 10000);
 
     return () => clearInterval(locationInterval);
-  }, [socket, captain, ride]);
+  }, [socket, captain?._id, ride]);
 
   // Register socket listener inside useEffect with cleanup to ensure it fires reliably
   useEffect(() => {
@@ -180,7 +193,7 @@ const CaptainHome = () => {
       </div>
       <div
         ref={ridePopupPanelRef}
-        className="fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12"
+        className="fixed inset-x-0 bottom-0 z-[500] max-h-[88vh] translate-y-full overflow-y-auto rounded-t-[32px] bg-white px-3 py-8 pt-10 shadow-[0_-20px_60px_rgba(15,23,42,0.18)]"
       >
         <RidePopUp
           ride={ride}

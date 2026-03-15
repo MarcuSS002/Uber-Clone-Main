@@ -4,6 +4,6 @@
 
 .leaflet-container {
   /* This ensures the inner map has inherited dimensions when placed in a flex/grid layout */
-  height: 70%;
+  height: 100%;
   width: 100%;
 }
