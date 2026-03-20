@@ -30,6 +30,38 @@ const getPhotonSuggestions = async (input) => {
     }).filter(Boolean);
 };
 
+const toRadians = (degrees) => (degrees * Math.PI) / 180;
+
+const estimateDistanceTimeFromCoords = (originCoords, destinationCoords) => {
+    const earthRadiusKm = 6371;
+    const latDiff = toRadians(destinationCoords.lat - originCoords.lat);
+    const lngDiff = toRadians(destinationCoords.lng - originCoords.lng);
+    const originLat = toRadians(originCoords.lat);
+    const destinationLat = toRadians(destinationCoords.lat);
+
+    const haversine =
+        Math.sin(latDiff / 2) * Math.sin(latDiff / 2) +
+        Math.cos(originLat) * Math.cos(destinationLat) *
+        Math.sin(lngDiff / 2) * Math.sin(lngDiff / 2);
+
+    const directDistanceKm = 2 * earthRadiusKm * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+
+    // Inflate straight-line distance to a more realistic road estimate.
+    const estimatedRoadDistanceKm = Math.max(directDistanceKm * 1.3, 1);
+    const estimatedDurationMinutes = Math.max(Math.round((estimatedRoadDistanceKm / 28) * 60), 4);
+
+    return {
+        distance: {
+            text: `${estimatedRoadDistanceKm.toFixed(1)} km`,
+            value: Math.round(estimatedRoadDistanceKm * 1000)
+        },
+        duration: {
+            text: `${estimatedDurationMinutes} mins`,
+            value: estimatedDurationMinutes * 60
+        }
+    };
+};
+
 module.exports.getAddressCoordinate = async (address) => {
     // Use Nominatim search endpoint (be mindful of usage policy / rate limits)
     const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(address)}&format=json&limit=5`;
@@ -69,13 +101,14 @@ module.exports.getDistanceTime = async (origin, destination) => {
         throw new Error('Origin and destination are required');
     }
 
-    if (!ORS_API_KEY) {
-        throw new Error('OpenRouteService API key not configured (ORS_API_KEY)');
-    }
-
     // Geocode both addresses to coordinates
     const originCoords = await module.exports.getAddressCoordinate(origin);
     const destinationCoords = await module.exports.getAddressCoordinate(destination);
+
+    if (!ORS_API_KEY) {
+        console.warn('ORS_API_KEY not configured. Falling back to estimated distance/time.');
+        return estimateDistanceTimeFromCoords(originCoords, destinationCoords);
+    }
 
     // ORS requires coordinates in [lon, lat]
     const coords = [
@@ -111,9 +144,9 @@ module.exports.getDistanceTime = async (origin, destination) => {
             throw new Error('No routes found via ORS');
         }
     } catch (err) {
-        // CRITICAL IMPROVED ERROR HANDLING: Catch the ORS API error and throw a clear message.
         console.error('Error in getDistanceTime (ORS API):', err.response?.status, err.response?.data || err.message);
-        throw new Error('Failed to calculate distance/time. Please check ORS key and server logs.');
+        console.warn('Falling back to estimated distance/time because ORS request failed.');
+        return estimateDistanceTimeFromCoords(originCoords, destinationCoords);
     }
 }
 
