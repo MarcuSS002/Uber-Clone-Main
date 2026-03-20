@@ -10,12 +10,32 @@ const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/drivi
 
 // NOTE: Add ORS_API_KEY to your Backend/.env if you want distance/time via ORS.
 
+const NOMINATIM_HEADERS = {
+    'User-Agent': 'UberClone/1.0',
+    'Accept-Language': 'en'
+};
+
+const getPhotonSuggestions = async (input) => {
+    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(input)}&limit=5`;
+    const photonResp = await axios.get(photonUrl, { timeout: 4000 });
+
+    if (!photonResp.data || !Array.isArray(photonResp.data.features)) {
+        return [];
+    }
+
+    return photonResp.data.features.map((feature) => {
+        const props = feature.properties || {};
+        const parts = [props.name, props.city, props.state, props.country].filter(Boolean);
+        return parts.join(', ');
+    }).filter(Boolean);
+};
+
 module.exports.getAddressCoordinate = async (address) => {
     // Use Nominatim search endpoint (be mindful of usage policy / rate limits)
     const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(address)}&format=json&limit=5`;
 
     try {
-        const response = await axios.get(url, { headers: { 'User-Agent': 'UberClone/1.0' }, timeout: 4000 });
+        const response = await axios.get(url, { headers: NOMINATIM_HEADERS, timeout: 4000 });
 
         if (response.data && response.data.length > 0) {
             const location = response.data[0];
@@ -98,35 +118,47 @@ module.exports.getDistanceTime = async (origin, destination) => {
 }
 
 module.exports.getAutoCompleteSuggestions = async (input) => {
-    if (!input) {
+    const normalizedInput = input?.trim();
+
+    if (!normalizedInput) {
         throw new Error('query is required');
     }
 
-    const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(input)}&format=json&limit=5`;
+    const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(normalizedInput)}&format=json&limit=5&addressdetails=1`;
 
     try {
-        const response = await axios.get(url, { headers: { 'User-Agent': 'UberClone/1.0' }, timeout: 4000 });
+        const response = await axios.get(url, { headers: NOMINATIM_HEADERS, timeout: 4000 });
 
         if (response.data && response.data.length > 0) {
             return response.data.map(prediction => prediction.display_name).filter(value => value);
         }
 
-        // Fallback to Photon (Komoot) when Nominatim fails or returns no data
         console.warn('Nominatim returned no suggestions, trying Photon fallback');
-        const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(input)}&limit=5`;
-        const photonResp = await axios.get(photonUrl, { timeout: 4000 });
-        if (photonResp.data && photonResp.data.features) {
-            return photonResp.data.features.map(f => {
-                const props = f.properties || {};
-                const parts = [ props.name, props.city, props.state, props.country ].filter(Boolean);
-                return parts.join(', ');
-            }).filter(Boolean);
+        const photonSuggestions = await getPhotonSuggestions(normalizedInput);
+        if (photonSuggestions.length > 0) {
+            return photonSuggestions;
         }
 
         throw new Error('Unable to fetch suggestions from Nominatim or Photon');
     } catch (err) {
-        // IMPROVED ERROR HANDLING: Catch the Nominatim API error and throw a clear message.
-        console.error('Error in getAutoCompleteSuggestions (geocoding):', err.code || err.message || err);
+        console.warn(
+            'Nominatim autocomplete failed, trying Photon fallback:',
+            err.response?.status || err.code || err.message || err
+        );
+
+        try {
+            const photonSuggestions = await getPhotonSuggestions(normalizedInput);
+            if (photonSuggestions.length > 0) {
+                return photonSuggestions;
+            }
+        } catch (photonErr) {
+            console.error(
+                'Photon fallback failed in getAutoCompleteSuggestions:',
+                photonErr.response?.status || photonErr.code || photonErr.message || photonErr
+            );
+        }
+
+        console.error('Error in getAutoCompleteSuggestions (geocoding):', err.response?.status || err.code || err.message || err);
         throw new Error('Failed to fetch auto-suggestions.');
     }
 }

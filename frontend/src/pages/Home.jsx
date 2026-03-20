@@ -85,25 +85,14 @@ const Home = () => {
     // Check for minimum length to avoid 400 Bad Request
     if (val.length < 3) return;
 
-    // Always use backend suggestions service
     try {
-      const token = localStorage.getItem("token");
-      console.log("Token sent for pickup suggestions:", token);
-      if (!token) {
-        console.warn("No auth token found when requesting pickup suggestions");
-        // Optionally redirect to login
-        navigate("/login");
-        return;
-      }
-
       const resp = await axios.get(`${apiBaseUrl}/maps/get-suggestions`, {
         params: { input: val },
-        headers: { Authorization: `Bearer ${token}` },
       });
       setPickupSuggestions(resp.data);
       setPanelOpen(true);
-    } catch {
-      console.error("Failed to fetch pickup suggestions");
+    } catch (err) {
+      console.error("Failed to fetch pickup suggestions", err);
       setPickupSuggestions([]);
     }
   };
@@ -120,26 +109,14 @@ const Home = () => {
     // Check for minimum length to avoid 400 Bad Request
     if (val.length < 3) return;
 
-    // Always use backend suggestions service
     try {
-      const token = localStorage.getItem("token");
-      console.log("Token sent for destination suggestions:", token);
-      if (!token) {
-        console.warn(
-          "No auth token found when requesting destination suggestions",
-        );
-        navigate("/login");
-        return;
-      }
-
       const resp = await axios.get(`${apiBaseUrl}/maps/get-suggestions`, {
         params: { input: val },
-        headers: { Authorization: `Bearer ${token}` },
       });
       setDestinationSuggestions(resp.data);
       setPanelOpen(true);
-    } catch {
-      console.error("Failed to fetch destination suggestions");
+    } catch (err) {
+      console.error("Failed to fetch destination suggestions", err);
       setDestinationSuggestions([]);
     }
   };
