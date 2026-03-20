@@ -55,13 +55,21 @@ function getOtp(num) {
 
 
 module.exports.createRide = async ({
-    user, pickup, destination, vehicleType
+    user, pickup, destination, vehicleType, fare: quotedFare
 }) => {
     if (!user || !pickup || !destination || !vehicleType) {
         throw new Error('All fields are required');
     }
 
-    const fare = await getFare(pickup, destination);
+    let fare = null;
+
+    if (Number.isFinite(Number(quotedFare)) && Number(quotedFare) > 0) {
+        fare = {
+            [vehicleType]: Math.round(Number(quotedFare))
+        };
+    } else {
+        fare = await getFare(pickup, destination);
+    }
 
 
 
@@ -158,4 +166,3 @@ module.exports.endRide = async ({ rideId, captain }) => {
 
     return ride;
 }
-

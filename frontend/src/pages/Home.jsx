@@ -179,6 +179,7 @@ const Home = () => {
           pickup,
           destination,
           vehicleType,
+          fare: fare?.[vehicleType],
         },
         {
           headers: {
@@ -190,20 +191,16 @@ const Home = () => {
       // socket event that your useEffect listener handles.
     } catch (err) {
       console.error("Error creating ride:", err);
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.[0]?.msg ||
+        "Failed to create ride. Please try again.";
 
-      // Handle the error state in the UI
-      // 1. Alert the user
-      alert("Failed to create ride. Please try again.");
+      alert(message);
 
-      // 2. Optionally, reset state to an earlier step
-      // (e.g., close LookingForDriver and show ConfirmRide/VehiclePanel)
       setVehicleFound(false);
       setWaitingForDriver(false);
-      setConfirmRidePanel(true); // Go back to the confirm ride panel
-
-      // NOTE: If the server is sending an actual 500 error,
-      // the root fix must still be on the server-side!
-      // This client-side change prevents the user interface from being stuck.
+      setConfirmRidePanel(true);
     }
   }
 

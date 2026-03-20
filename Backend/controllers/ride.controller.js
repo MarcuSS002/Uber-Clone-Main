@@ -1,7 +1,7 @@
 const rideService = require('../services/ride.service');
 const { validationResult } = require('express-validator');
 const mapService = require('../services/maps.service');
-const { sendMessageToSocketId } = require('../socket');
+const { sendMessageToSocketId, getActiveCaptainSocketIds } = require('../socket');
 const rideModel = require('../models/ride.model');
 const captainModel = require('../models/captain.model');
 
@@ -12,7 +12,7 @@ module.exports.createRide = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { userId, pickup, destination, vehicleType } = req.body;
+        const { userId, pickup, destination, vehicleType, fare } = req.body;
 
     try {
         // Ensure authentication middleware attached a user
@@ -21,7 +21,13 @@ module.exports.createRide = async (req, res) => {
             return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
         }
 
-        const ride = await rideService.createRide({ user: req.user._id, pickup, destination, vehicleType });
+        const ride = await rideService.createRide({
+            user: req.user._id,
+            pickup,
+            destination,
+            vehicleType,
+            fare
+        });
         // Send success response early so the client doesn't wait for notifications
         res.status(201).json(ride);
 
@@ -33,27 +39,21 @@ module.exports.createRide = async (req, res) => {
             // Fetch the newly created ride and populate the 'user' field (include fullname, email and socketId)
             const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate('user', 'fullname email socketId');
 
-            // Always notify online captains so captain-home receives rides immediately in dev/prod.
-            const onlineCaptains = await captainModel.find({
-                socketId: { $exists: true, $ne: '' },
-                status: 'active'
-            }).select('socketId');
+            const captainSocketIds = new Set(getActiveCaptainSocketIds());
 
-            // Keep nearby captains first when geocoding succeeds, but do not block overall delivery.
-            let captainsInRadius = [];
-            try {
-                const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
-                if (pickupCoordinates && typeof pickupCoordinates.lat === 'number' && typeof pickupCoordinates.lng === 'number') {
-                    captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.lat, pickupCoordinates.lng, 2);
-                }
-            } catch (geoErr) {
-                console.warn('createRide: geocode/radius lookup failed, continuing with online captains only:', geoErr.message);
+            // Fallback to DB-backed socketIds if the in-memory list is empty (for cold starts / reconnect races).
+            if (captainSocketIds.size === 0) {
+                const onlineCaptains = await captainModel.find({
+                    socketId: { $exists: true, $ne: '' },
+                    status: 'active'
+                }).select('socketId');
+
+                onlineCaptains.forEach((captain) => {
+                    if (captain?.socketId) {
+                        captainSocketIds.add(captain.socketId);
+                    }
+                });
             }
-
-            const captainSocketIds = new Set([
-                ...(captainsInRadius || []).map(c => c?.socketId).filter(Boolean),
-                ...(onlineCaptains || []).map(c => c?.socketId).filter(Boolean)
-            ]);
 
             console.log(`Sending new-ride event to ${captainSocketIds.size} captains. rideId=${ride._id}`);
 

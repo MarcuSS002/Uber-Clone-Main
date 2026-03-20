@@ -3,6 +3,7 @@ const userModel = require("./models/user.model");
 const captainModel = require("./models/captain.model");
 
 let io;
+const activeCaptainSockets = new Map();
 
 function initializeSocket(server) {
   io = socketIo(server, {
@@ -31,6 +32,7 @@ function initializeSocket(server) {
           { socketId: socket.id, status: "active" },
           { new: true },
         );
+        activeCaptainSockets.set(String(userId), socket.id);
         console.log(
           `Captain ${userId} joined with socketId=${socket.id} (status set to active)`,
         );
@@ -69,10 +71,12 @@ function initializeSocket(server) {
             { $unset: { socketId: "" }, $set: { status: "inactive" } },
             { new: true },
           );
-          if (c)
+          if (c) {
+            activeCaptainSockets.delete(String(c._id));
             console.log(
               `Cleared socketId and set inactive for captain ${c._id}`,
             );
+          }
         } catch (err) {
           console.error("Error clearing socketId on disconnect:", err);
         }
@@ -101,4 +105,6 @@ const sendMessageToSocketId = (socketId, messageObject) => {
   }
 };
 
-module.exports = { initializeSocket, sendMessageToSocketId };
+const getActiveCaptainSocketIds = () => Array.from(activeCaptainSockets.values()).filter(Boolean);
+
+module.exports = { initializeSocket, sendMessageToSocketId, getActiveCaptainSocketIds };
