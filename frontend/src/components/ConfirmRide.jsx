@@ -53,13 +53,11 @@ const ConfirmRide = (props) => {
         </div>
         <button
           onClick={() => {
-            props.setVehicleFound(true);
-            props.setConfirmRidePanel(false);
-            props.createRide();
+            props.confirmSelectedRide();
           }}
           className="w-full mt-5 rounded-2xl bg-green-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
         >
-          Confirm Ride
+          {props.isCreatingRide ? "Confirm And Keep Searching" : "Confirm Ride"}
         </button>
       </div>
     </div>
@@ -73,7 +71,8 @@ ConfirmRide.propTypes = {
   fare: PropTypes.object.isRequired,
   vehicleType: PropTypes.string.isRequired,
   setVehicleFound: PropTypes.func.isRequired,
-  createRide: PropTypes.func.isRequired,
+  confirmSelectedRide: PropTypes.func.isRequired,
+  isCreatingRide: PropTypes.bool,
 };
 
 export default ConfirmRide;

@@ -40,9 +40,7 @@ const CaptainProtectWrapper = ({
         console.log('CaptainProtectWrapper: using token', mask(rawToken))
 
         axios.get(`${apiBaseUrl}/captains/profile`, {
-            headers: {
-                Authorization: `Bearer ${rawToken}`
-            }
+            withCredentials: true
         }).then(response => {
             if (response.status === 200) {
                 setCaptain(response.data.captain)

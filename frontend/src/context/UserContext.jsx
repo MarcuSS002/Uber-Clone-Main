@@ -42,7 +42,7 @@ const UserContext = ({ children }) => {
         (async () => {
             try {
                 const res = await axios.get(`${apiBaseUrl}/users/profile`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    withCredentials: true,
                 })
                 if (res?.data?.user) {
                     setUser(res.data.user)

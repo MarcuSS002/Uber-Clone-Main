@@ -3,6 +3,13 @@ const captainService = require('../services/captain.service');
 const blackListTokenModel = require('../models/blacklistToken.model');
 const { validationResult } = require('express-validator');
 
+const authCookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 24 * 60 * 60 * 1000,
+};
+
 const serializeCaptain = (captain) => ({
     _id: captain._id,
     fullname: captain.fullname,
@@ -70,7 +77,7 @@ module.exports.loginCaptain = async (req, res, next) => {
 
     const token = captain.generateAuthToken();
 
-    res.cookie('token', token);
+    res.cookie('token', token, authCookieOptions);
 
     res.status(200).json({ token, captain: serializeCaptain(captain) });
 }
@@ -84,7 +91,7 @@ module.exports.logoutCaptain = async (req, res, next) => {
 
     await blackListTokenModel.create({ token });
 
-    res.clearCookie('token');
+    res.clearCookie('token', authCookieOptions);
 
     res.status(200).json({ message: 'Logout successfully' });
 }

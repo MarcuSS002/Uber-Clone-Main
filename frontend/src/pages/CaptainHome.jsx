@@ -131,13 +131,11 @@ const CaptainHome = () => {
 
       await axios.post(
         `${apiBaseUrl}/rides/confirm`,
-        {
+        new URLSearchParams({
           rideId: ride._id,
-        },
+        }),
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true,
         },
       );
 

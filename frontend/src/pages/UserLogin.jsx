@@ -20,10 +20,12 @@ const UserLogin = () => {
     e.preventDefault();
 
     setError(null)
-    const payload = { email, password }
+    const payload = new URLSearchParams({ email, password })
 
     try {
-      const response = await axios.post(`${apiBaseUrl}/users/login`, payload)
+      const response = await axios.post(`${apiBaseUrl}/users/login`, payload, {
+        withCredentials: true,
+      })
 
       if (response.status === 200) {
         const data = response.data

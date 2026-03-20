@@ -29,9 +29,7 @@ const ConfirmRidePopUp = (props) => {
           rideId: props.ride._id,
           otp: otp,
         },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true,
       });
 
       if (response.status === 200) {

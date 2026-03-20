@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, lazy, Suspense } from "react";
+import { useEffect, useState, useContext, lazy, Suspense, useRef } from "react";
 import axios from "axios";
 import { apiBaseUrl } from "../utils/api-config";
 import "remixicon/fonts/remixicon.css";
@@ -26,6 +26,11 @@ const Home = () => {
   const [activeField, setActiveField] = useState(null);
   const [fare, setFare] = useState({});
   const [vehicleType, setVehicleType] = useState(null);
+  const [isCreatingRide, setIsCreatingRide] = useState(false);
+  const rideCreationRef = useRef({
+    requestId: 0,
+    status: "idle",
+  });
   const isBottomSheetOpen =
     vehiclePanel || confirmRidePanel || vehicleFound || waitingForDriver;
   // ride moved to global UserDataContext so socket listeners can update it centrally
@@ -140,9 +145,7 @@ const Home = () => {
 
       const response = await axios.get(`${apiBaseUrl}/rides/get-fare`, {
         params: { pickup, destination },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true,
       });
 
       setFare(response.data);
@@ -162,7 +165,7 @@ const Home = () => {
 
   // ... existing code ...
 
-  async function createRide() {
+  async function createRide(selectedVehicleType = vehicleType) {
     try {
       const token = localStorage.getItem("token");
       console.log("Token sent for createRide:", token);
@@ -173,20 +176,36 @@ const Home = () => {
         return;
       }
 
+      if (!selectedVehicleType) {
+        alert("Please select a vehicle first.");
+        return;
+      }
+
+      const requestId = rideCreationRef.current.requestId + 1;
+      rideCreationRef.current = {
+        requestId,
+        status: "pending",
+      };
+      setIsCreatingRide(true);
+
       await axios.post(
         `${apiBaseUrl}/rides/create`,
-        {
+        new URLSearchParams({
           pickup,
           destination,
-          vehicleType,
-          fare: fare?.[vehicleType],
-        },
+          vehicleType: selectedVehicleType,
+          fare: String(fare?.[selectedVehicleType] ?? ""),
+        }),
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true,
         },
       );
+      if (rideCreationRef.current.requestId === requestId) {
+        rideCreationRef.current = {
+          requestId,
+          status: "success",
+        };
+      }
       // No need to do anything here on success, as the server should emit a
       // socket event that your useEffect listener handles.
     } catch (err) {
@@ -196,13 +215,35 @@ const Home = () => {
         err?.response?.data?.errors?.[0]?.msg ||
         "Failed to create ride. Please try again.";
 
-      alert(message);
+      rideCreationRef.current = {
+        requestId: rideCreationRef.current.requestId,
+        status: "error",
+      };
 
       setVehicleFound(false);
       setWaitingForDriver(false);
       setConfirmRidePanel(true);
+      alert(message);
+    } finally {
+      setIsCreatingRide(false);
     }
   }
+
+  const handleVehicleSelect = (selectedVehicleType) => {
+    setVehicleType(selectedVehicleType);
+    setVehiclePanel(false);
+    setConfirmRidePanel(true);
+    void createRide(selectedVehicleType);
+  };
+
+  const confirmSelectedRide = () => {
+    if (rideCreationRef.current.status === "error") {
+      void createRide(vehicleType);
+    }
+
+    setConfirmRidePanel(false);
+    setVehicleFound(true);
+  };
 
   return (
     <div className="flex flex-col h-screen w-screen relative overflow-hidden">
@@ -290,10 +331,8 @@ const Home = () => {
       {vehiclePanel && (
         <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white px-3 py-10 pt-12 shadow-2xl">
           <VehiclePanel
-            selectVehicle={setVehicleType}
             fare={fare}
-            setConfirmRidePanel={setConfirmRidePanel}
-            setVehiclePanel={setVehiclePanel}
+            onSelectVehicle={handleVehicleSelect}
           />
         </div>
       )}
@@ -301,13 +340,14 @@ const Home = () => {
       {confirmRidePanel && (
         <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white px-3 pb-3 pt-3 shadow-2xl">
           <ConfirmRide
-            createRide={createRide}
             pickup={pickup}
             destination={destination}
             fare={fare}
             vehicleType={vehicleType}
             setConfirmRidePanel={setConfirmRidePanel}
             setVehicleFound={setVehicleFound}
+            confirmSelectedRide={confirmSelectedRide}
+            isCreatingRide={isCreatingRide}
           />
         </div>
       )}
@@ -315,12 +355,12 @@ const Home = () => {
       {vehicleFound && (
         <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-white px-3 py-6 pt-3 shadow-2xl">
           <LookingForDriver
-            createRide={createRide}
             pickup={pickup}
             destination={destination}
             fare={fare}
             vehicleType={vehicleType}
             setVehicleFound={setVehicleFound}
+            isCreatingRide={isCreatingRide}
           />
         </div>
       )}

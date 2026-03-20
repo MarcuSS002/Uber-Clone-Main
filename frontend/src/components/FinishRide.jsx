@@ -10,15 +10,10 @@ const FinishRide = (props) => {
     const navigate = useNavigate()
 
     async function endRide() {
-        const response = await axios.post(`${apiBaseUrl}/rides/end-ride`, {
-
+        const response = await axios.post(`${apiBaseUrl}/rides/end-ride`, new URLSearchParams({
             rideId: props.ride._id
-
-
-        }, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
+        }), {
+            withCredentials: true
         })
 
         if (response.status === 200) {

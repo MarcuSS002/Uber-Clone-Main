@@ -50,7 +50,7 @@ const CaptainContext = ({ children }) => {
       setIsLoading(true);
       try {
         const res = await axios.get(`${apiBaseUrl}/captains/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
         });
         if (res?.data?.captain) {
           setCaptain(res.data.captain);

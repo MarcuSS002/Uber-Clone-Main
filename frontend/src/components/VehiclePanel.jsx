@@ -1,8 +1,8 @@
+import PropTypes from "prop-types";
+
 const VehiclePanel = (props) => {
   const handleSelect = (type) => {
-    props.selectVehicle(type);
-    props.setVehiclePanel(false);
-    props.setConfirmRidePanel(true);
+    props.onSelectVehicle(type);
   };
 
   return (
@@ -85,6 +85,11 @@ const VehiclePanel = (props) => {
       </div>
     </div>
   );
+};
+
+VehiclePanel.propTypes = {
+  fare: PropTypes.object,
+  onSelectVehicle: PropTypes.func.isRequired,
 };
 
 export default VehiclePanel;

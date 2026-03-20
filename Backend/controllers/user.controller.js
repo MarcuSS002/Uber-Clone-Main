@@ -3,6 +3,13 @@ const userService = require("../services/user.service");
 const { validationResult } = require("express-validator");
 const blackListTokenModel = require("../models/blacklistToken.model");
 
+const authCookieOptions = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  maxAge: 24 * 60 * 60 * 1000,
+};
+
 const serializeUser = (user) => ({
   _id: user._id,
   fullname: user.fullname,
@@ -60,7 +67,7 @@ module.exports.loginUser = async (req, res, next) => {
 
   const token = user.generateAuthToken();
 
-  res.cookie("token", token);
+  res.cookie("token", token, authCookieOptions);
 
   res.status(200).json({ token, user: serializeUser(user) });
 };
@@ -70,7 +77,7 @@ module.exports.getUserProfile = async (req, res, next) => {
 };
 
 module.exports.logoutUser = async (req, res, next) => {
-  res.clearCookie("token");
+  res.clearCookie("token", authCookieOptions);
   const token = req.cookies.token || req.headers.authorization.split(" ")[1];
 
   await blackListTokenModel.create({ token });

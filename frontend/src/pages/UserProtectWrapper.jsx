@@ -27,9 +27,7 @@ const UserProtectWrapper = ({ children }) => {
 
     axios
       .get(`${apiBaseUrl}/users/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true,
       })
       .then((response) => {
         if (response.status === 200) {
