@@ -148,7 +148,11 @@ const Home = () => {
       setFare(response.data);
     } catch (err) {
       console.error("Error finding trip/fare:", err);
-      alert("Error finding trip/fare. Please check locations.");
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.[0]?.msg ||
+        "Error finding trip/fare. Please check locations.";
+      alert(message);
 
       setVehiclePanel(false);
       setPanelOpen(true);

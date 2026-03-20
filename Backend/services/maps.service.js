@@ -30,6 +30,19 @@ const getPhotonSuggestions = async (input) => {
     }).filter(Boolean);
 };
 
+const getPhotonCoordinate = async (address) => {
+    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=5`;
+    const photonResp = await axios.get(photonUrl, { timeout: 4000 });
+
+    if (photonResp.data && Array.isArray(photonResp.data.features) && photonResp.data.features.length > 0) {
+        const feature = photonResp.data.features[0];
+        const [lon, lat] = feature.geometry.coordinates;
+        return { lat: parseFloat(lat), lng: parseFloat(lon) };
+    }
+
+    return null;
+};
+
 const toRadians = (degrees) => (degrees * Math.PI) / 180;
 
 const estimateDistanceTimeFromCoords = (originCoords, destinationCoords) => {
@@ -63,8 +76,14 @@ const estimateDistanceTimeFromCoords = (originCoords, destinationCoords) => {
 };
 
 module.exports.getAddressCoordinate = async (address) => {
+    const normalizedAddress = address?.trim();
+
+    if (!normalizedAddress) {
+        throw new Error('Address is required');
+    }
+
     // Use Nominatim search endpoint (be mindful of usage policy / rate limits)
-    const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(address)}&format=json&limit=5`;
+    const url = `${NOMINATIM_URL}/search?q=${encodeURIComponent(normalizedAddress)}&format=json&limit=5`;
 
     try {
         const response = await axios.get(url, { headers: NOMINATIM_HEADERS, timeout: 4000 });
@@ -80,18 +99,31 @@ module.exports.getAddressCoordinate = async (address) => {
 
         // If Nominatim returned no results, try Photon as a fallback
         console.warn('Nominatim returned no results, trying Photon fallback');
-        const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=5`;
-        const photonResp = await axios.get(photonUrl, { timeout: 4000 });
-        if (photonResp.data && photonResp.data.features && photonResp.data.features.length > 0) {
-            const feat = photonResp.data.features[0];
-            const [ lon, lat ] = feat.geometry.coordinates;
-            return { lat: parseFloat(lat), lng: parseFloat(lon) };
+        const photonCoordinate = await getPhotonCoordinate(normalizedAddress);
+        if (photonCoordinate) {
+            return photonCoordinate;
         }
 
         throw new Error('Coordinates not found via Nominatim or Photon');
     } catch (error) {
-        // IMPROVED ERROR HANDLING: Catch the Nominatim API error and throw a clear message.
-        console.error('Error in getAddressCoordinate (geocoding):', error.code || error.message || error);
+        console.warn(
+            'Nominatim geocoding failed, trying Photon fallback:',
+            error.response?.status || error.code || error.message || error
+        );
+
+        try {
+            const photonCoordinate = await getPhotonCoordinate(normalizedAddress);
+            if (photonCoordinate) {
+                return photonCoordinate;
+            }
+        } catch (photonErr) {
+            console.error(
+                'Photon fallback failed in getAddressCoordinate:',
+                photonErr.response?.status || photonErr.code || photonErr.message || photonErr
+            );
+        }
+
+        console.error('Error in getAddressCoordinate (geocoding):', error.response?.status || error.code || error.message || error);
         throw new Error('Failed to geocode address.');
     }
 }
