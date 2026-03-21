@@ -12,6 +12,7 @@ const UserSignup = () => {
   const [ password, setPassword ] = useState('')
   const [ firstName, setFirstName ] = useState('')
   const [ lastName, setLastName ] = useState('')
+  const [ error, setError ] = useState('')
 
   const navigate = useNavigate()
 
@@ -22,6 +23,7 @@ const UserSignup = () => {
 
   const submitHandler = async (e) => {
     e.preventDefault()
+    setError('')
     const newUser = {
       fullname: {
         firstname: firstName,
@@ -32,7 +34,9 @@ const UserSignup = () => {
     }
 
     try {
-      const response = await axios.post(`${apiBaseUrl}/users/register`, newUser)
+      const response = await axios.post(`${apiBaseUrl}/users/register`, newUser, {
+        withCredentials: true
+      })
 
       if (response.status === 201) {
         const data = response.data
@@ -42,11 +46,10 @@ const UserSignup = () => {
         navigate('/home')
       }
     } catch (err) {
-      // Better error handling so network errors don't cause uncaught rejections
       console.error('Signup failed:', err)
-      // show a useful message to the user
-      const msg = err?.response?.data?.message || err.message || 'Network error'
-      alert('Signup failed: ' + msg)
+      const validationMessage = err?.response?.data?.errors?.[0]?.msg || err?.response?.data?.errors?.[0]?.message
+      const msg = validationMessage || err?.response?.data?.message || err.message || 'Network error'
+      setError(msg)
       return
     }
 
@@ -119,6 +122,7 @@ const UserSignup = () => {
             >Create account</button>
 
           </form>
+          {error && <p className='text-red-500 mt-2'>{error}</p>}
           <p className='text-center'>Already have a account? <Link to='/login' className='text-blue-600'>Login here</Link></p>
         </div>
         <div>

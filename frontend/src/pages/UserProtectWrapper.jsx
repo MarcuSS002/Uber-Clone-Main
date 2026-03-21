@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { apiBaseUrl } from "../utils/api-config";
 import { getStoredUser, clearStoredUser } from "../utils/auth-storage";
+import { getAuthHeaders } from "../utils/auth-headers";
 
 const UserProtectWrapper = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -28,6 +29,7 @@ const UserProtectWrapper = ({ children }) => {
     axios
       .get(`${apiBaseUrl}/users/profile`, {
         withCredentials: true,
+        headers: getAuthHeaders("token"),
       })
       .then((response) => {
         if (response.status === 200) {

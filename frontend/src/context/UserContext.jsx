@@ -3,6 +3,7 @@ import { createContext, useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { apiBaseUrl } from '../utils/api-config'
 import { getStoredUser, setStoredUser, clearStoredUser } from '../utils/auth-storage'
+import { getAuthHeaders } from '../utils/auth-headers'
 
 /**
  * 1. Create and export the Context object.
@@ -43,6 +44,7 @@ const UserContext = ({ children }) => {
             try {
                 const res = await axios.get(`${apiBaseUrl}/users/profile`, {
                     withCredentials: true,
+                    headers: getAuthHeaders('token'),
                 })
                 if (res?.data?.user) {
                     setUser(res.data.user)

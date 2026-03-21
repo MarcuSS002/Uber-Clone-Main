@@ -10,6 +10,7 @@ import WaitingForDriver from "../components/WaitingForDriver";
 import { SocketContext } from "../context/SocketContext";
 import { UserDataContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
+import { getAuthHeaders } from "../utils/auth-headers";
 
 const LiveTracking = lazy(() => import("../components/LiveTracking"));
 
@@ -146,6 +147,7 @@ const Home = () => {
       const response = await axios.get(`${apiBaseUrl}/rides/get-fare`, {
         params: { pickup, destination },
         withCredentials: true,
+        headers: getAuthHeaders("token"),
       });
 
       setFare(response.data);
@@ -198,6 +200,7 @@ const Home = () => {
         }),
         {
           withCredentials: true,
+          headers: getAuthHeaders("token"),
         },
       );
       if (rideCreationRef.current.requestId === requestId) {

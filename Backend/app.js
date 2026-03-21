@@ -94,6 +94,27 @@ app.use('/maps', mapsRoutes);
 app.use('/rides', rideRoutes);
 app.use('/admin', adminRoutes);
 
+app.use((err, req, res, next) => {
+  console.error('Unhandled request error:', err);
+
+  if (err.name === 'ValidationError') {
+    const errors = Object.values(err.errors).map((error) => ({
+      message: error.message,
+      path: error.path,
+    }));
+
+    return res.status(400).json({ errors });
+  }
+
+  if (err.code === 11000) {
+    return res.status(400).json({ message: 'A record with this value already exists' });
+  }
+
+  return res.status(err.statusCode || 500).json({
+    message: err.message || 'Internal server error',
+  });
+});
+
 
 
 

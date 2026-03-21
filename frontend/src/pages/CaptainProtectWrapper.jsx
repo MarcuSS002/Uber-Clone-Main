@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { apiBaseUrl } from '../utils/api-config'
 import { getStoredCaptain, clearStoredCaptain } from '../utils/auth-storage'
+import { getAuthHeaders } from '../utils/auth-headers'
 
 const CaptainProtectWrapper = ({
     children
@@ -40,7 +41,8 @@ const CaptainProtectWrapper = ({
         console.log('CaptainProtectWrapper: using token', mask(rawToken))
 
         axios.get(`${apiBaseUrl}/captains/profile`, {
-            withCredentials: true
+            withCredentials: true,
+            headers: getAuthHeaders(['captain-token', 'token'])
         }).then(response => {
             if (response.status === 200) {
                 setCaptain(response.data.captain)

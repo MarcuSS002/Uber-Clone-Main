@@ -6,6 +6,7 @@ import {
   setStoredCaptain,
   clearStoredCaptain,
 } from "../utils/auth-storage";
+import { getAuthHeaders } from "../utils/auth-headers";
 
 export const CaptainDataContext = createContext();
 
@@ -51,6 +52,7 @@ const CaptainContext = ({ children }) => {
       try {
         const res = await axios.get(`${apiBaseUrl}/captains/profile`, {
           withCredentials: true,
+          headers: getAuthHeaders(["captain-token", "token"]),
         });
         if (res?.data?.captain) {
           setCaptain(res.data.captain);

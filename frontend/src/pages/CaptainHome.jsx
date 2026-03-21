@@ -11,6 +11,7 @@ import { CaptainDataContext } from "../context/CapatainContext";
 import axios from "axios";
 import { apiBaseUrl } from "../utils/api-config";
 import CaptainPickupMap from "../components/CaptainPickupMap";
+import { getAuthHeaders } from "../utils/auth-headers";
 
 const CaptainHome = () => {
   const [ridePopupPanel, setRidePopupPanel] = useState(false);
@@ -27,6 +28,7 @@ const CaptainHome = () => {
     if (!socket || !captain || !captain._id) return;
 
     const emitJoin = () => {
+      console.debug("Captain joining socket room", captain._id, socket.id);
       socket.emit("join", {
         userId: captain._id,
         userType: "captain",
@@ -107,7 +109,6 @@ const CaptainHome = () => {
     const handleNewRide = (data) => {
       console.debug("Socket event: new-ride", data);
       setRide(data);
-      // Show the ride popup panel on new-ride arrival so captain can review and Accept
       setRidePopupPanel(true);
       setConfirmRidePopupPanel(false);
     };
@@ -136,6 +137,7 @@ const CaptainHome = () => {
         }),
         {
           withCredentials: true,
+          headers: getAuthHeaders(["captain-token", "token"]),
         },
       );
 

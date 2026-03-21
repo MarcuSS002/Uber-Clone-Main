@@ -19,6 +19,7 @@ const CaptainSignup = () => {
   const [ vehiclePlate, setVehiclePlate ] = useState('')
   const [ vehicleCapacity, setVehicleCapacity ] = useState('')
   const [ vehicleType, setVehicleType ] = useState('')
+  const [ error, setError ] = useState('')
 
 
   const { setCaptain } = React.useContext(CaptainDataContext)
@@ -26,6 +27,7 @@ const CaptainSignup = () => {
 
   const submitHandler = async (e) => {
     e.preventDefault()
+    setError('')
     const captainData = {
       fullname: {
         firstname: firstName,
@@ -41,15 +43,24 @@ const CaptainSignup = () => {
       }
     }
 
-    const response = await axios.post(`${apiBaseUrl}/captains/register`, captainData)
+    try {
+      const response = await axios.post(`${apiBaseUrl}/captains/register`, captainData, {
+        withCredentials: true
+      })
 
-    if (response.status === 201) {
-      const data = response.data
-      setCaptain(data.captain)
-      setStoredCaptain(data.captain)
-      // store captain token under its own key so it doesn't conflict with user token
-      localStorage.setItem('captain-token', data.token)
-      navigate('/captain-home')
+      if (response.status === 201) {
+        const data = response.data
+        setCaptain(data.captain)
+        setStoredCaptain(data.captain)
+        localStorage.setItem('captain-token', data.token)
+        navigate('/captain-home')
+      }
+    } catch (err) {
+      console.error('Captain signup failed:', err)
+      const validationMessage = err?.response?.data?.errors?.[0]?.msg || err?.response?.data?.errors?.[0]?.message
+      const msg = validationMessage || err?.response?.data?.message || err.message || 'Network or server error'
+      setError(msg)
+      return
     }
 
     setEmail('')
@@ -164,7 +175,7 @@ const CaptainSignup = () => {
               <option value="" disabled>Select Vehicle Type</option>
               <option value="car">Car</option>
               <option value="auto">Auto</option>
-              <option value="moto">Moto</option>
+              <option value="motorcycle">Moto</option>
             </select>
           </div>
 
@@ -173,6 +184,7 @@ const CaptainSignup = () => {
           >Create Captain Account</button>
 
         </form>
+        {error && <p className='text-red-500 mt-2'>{error}</p>}
         <p className='text-center'>Already have a account? <Link to='/captain-login' className='text-blue-600'>Login here</Link></p>
       </div>
       <div>

@@ -11,6 +11,7 @@ const socket = io(`${apiBaseUrl}`, {
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   transports: ["websocket", "polling"],
+  withCredentials: true,
 }); 
 
 const SocketProvider = ({ children }) => {
@@ -35,6 +36,10 @@ const SocketProvider = ({ children }) => {
 
     const handleReconnectFailed = () => {
       console.error("Socket reconnection failed");
+    };
+
+    const handleJoinAck = (payload) => {
+      console.debug("Socket join acknowledged", payload);
     };
 
     // Listen for ride lifecycle events and update global ride state
@@ -63,6 +68,7 @@ const SocketProvider = ({ children }) => {
     socket.on("disconnect", handleDisconnect);
     socket.on("connect_error", handleConnectError);
     socket.io.on("reconnect_failed", handleReconnectFailed);
+    socket.on("join:ack", handleJoinAck);
     socket.on("ride-confirmed", handleRideConfirmed);
     socket.on("ride-started", handleRideStarted);
 
@@ -71,6 +77,7 @@ const SocketProvider = ({ children }) => {
       socket.off("disconnect", handleDisconnect);
       socket.off("connect_error", handleConnectError);
       socket.io.off("reconnect_failed", handleReconnectFailed);
+      socket.off("join:ack", handleJoinAck);
       socket.off("ride-confirmed", handleRideConfirmed);
       socket.off("ride-started", handleRideStarted);
     };

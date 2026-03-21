@@ -1,7 +1,7 @@
 const rideService = require('../services/ride.service');
 const { validationResult } = require('express-validator');
 const mapService = require('../services/maps.service');
-const { sendMessageToSocketId, getActiveCaptainSocketIds } = require('../socket');
+const { sendMessageToSocketId, sendMessageToRoom, getActiveCaptainSocketIds, getCaptainRoomName } = require('../socket');
 const rideModel = require('../models/ride.model');
 const captainModel = require('../models/captain.model');
 
@@ -12,7 +12,7 @@ module.exports.createRide = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-        const { userId, pickup, destination, vehicleType, fare } = req.body;
+        const { pickup, destination, vehicleType, fare } = req.body;
 
     try {
         // Ensure authentication middleware attached a user
@@ -40,22 +40,27 @@ module.exports.createRide = async (req, res) => {
             const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate('user', 'fullname email socketId');
 
             const captainSocketIds = new Set(getActiveCaptainSocketIds());
+            const activeCaptains = await captainModel.find({
+                status: 'active'
+            }).select('_id socketId');
 
             // Fallback to DB-backed socketIds if the in-memory list is empty (for cold starts / reconnect races).
             if (captainSocketIds.size === 0) {
-                const onlineCaptains = await captainModel.find({
-                    socketId: { $exists: true, $ne: '' },
-                    status: 'active'
-                }).select('socketId');
-
-                onlineCaptains.forEach((captain) => {
+                activeCaptains.forEach((captain) => {
                     if (captain?.socketId) {
                         captainSocketIds.add(captain.socketId);
                     }
                 });
             }
 
-            console.log(`Sending new-ride event to ${captainSocketIds.size} captains. rideId=${ride._id}`);
+            console.log(`Sending new-ride event to ${activeCaptains.length} active captains and ${captainSocketIds.size} captain sockets. rideId=${ride._id}`);
+
+            activeCaptains.forEach((captain) => {
+                sendMessageToRoom(getCaptainRoomName(captain._id), {
+                    event: 'new-ride',
+                    data: rideWithUser
+                });
+            });
 
             captainSocketIds.forEach((socketId) => {
                 sendMessageToSocketId(socketId, {
@@ -163,5 +168,5 @@ module.exports.endRide = async (req, res) => {
         return res.status(200).json(ride);
     } catch (err) {
         return res.status(500).json({ message: err.message });
-    } s
+    }
 }
